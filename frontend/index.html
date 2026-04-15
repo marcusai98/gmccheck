@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMC Compliance Check</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #080C09;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px 80px;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 48px; padding-top: 20px; }
+  .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
+  .header h1 span { color: #00C96B; }
+  .header p { color: #8A9B8E; margin-top: 10px; font-size: 1rem; }
+
+  /* Scan form */
+  .scan-form {
+    display: flex;
+    gap: 12px;
+    background: #0F1A12;
+    border: 1px solid #1E2E22;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+  .scan-form input {
+    flex: 1;
+    background: #0A140C;
+    border: 1px solid #1E2E22;
+    border-radius: 8px;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    padding: 14px 16px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .scan-form input:focus { border-color: #00C96B; }
+  .scan-form input::placeholder { color: #4A5E4E; }
+  .scan-form button {
+    background: #00C96B;
+    border: none;
+    border-radius: 8px;
+    color: #080C09;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 14px 28px;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .scan-form button:hover { background: #00e07a; }
+  .scan-form button:active { transform: scale(0.98); }
+  .scan-form button:disabled { background: #1E2E22; color: #4A5E4E; cursor: not-allowed; }
+
+  /* Progress */
+  .progress-section { display: none; margin-bottom: 32px; }
+  .progress-section.visible { display: block; }
+  .progress-title { font-size: 0.85rem; color: #8A9B8E; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+  .steps { display: flex; gap: 8px; flex-wrap: wrap; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #0F1A12;
+    border: 1px solid #1E2E22;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    color: #4A5E4E;
+    transition: all 0.3s;
+    min-width: 120px;
+  }
+  .step.running { border-color: #00C96B44; color: #fff; }
+  .step.done { border-color: #00C96B; color: #00C96B; }
+  .step.error { border-color: #FF4444; color: #FF4444; }
+  .step-icon { font-size: 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; animation: spin 1s linear infinite; }
+
+  /* Error banner */
+  .error-banner {
+    display: none;
+    background: #1A0808;
+    border: 1px solid #FF4444;
+    border-radius: 8px;
+    color: #FF6B6B;
+    padding: 16px;
+    margin-bottom: 24px;
+  }
+  .error-banner.visible { display: block; }
+
+  /* Results */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+
+  /* Score banner */
+  .score-banner {
+    border-radius: 12px;
+    margin-bottom: 24px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .score-banner.excellent { background: #0A1F0F; border: 1px solid #00C96B44; }
+  .score-banner.good { background: #1A1A0A; border: 1px solid #F5A62344; }
+  .score-banner.poor { background: #1A0A0A; border: 1px solid #FF444444; }
+  .score-number { font-size: 2.8rem; font-weight: 700; }
+  .score-number.excellent { color: #00C96B; }
+  .score-number.good { color: #F5A623; }
+  .score-number.poor { color: #FF4444; }
+  .score-label { font-size: 1rem; color: #8A9B8E; margin-top: 4px; }
+  .score-stats { display: flex; gap: 20px; text-align: center; }
+  .score-stat { }
+  .score-stat .val { font-size: 1.5rem; font-weight: 700; }
+  .score-stat .lbl { font-size: 0.75rem; color: #8A9B8E; }
+  .pass-val { color: #00C96B; }
+  .warn-val { color: #F5A623; }
+  .fail-val { color: #FF4444; }
+
+  /* Store intelligence */
+  .intel-panel {
+    background: #0F1A12;
+    border: 1px solid #1E2E22;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+  .intel-item { }
+  .intel-label { font-size: 0.75rem; color: #8A9B8E; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .intel-value { font-size: 1.1rem; font-weight: 600; }
+
+  /* Category sections */
+  .category { margin-bottom: 24px; }
+  .category-title {
+    font-size: 0.8rem;
+    color: #8A9B8E;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #1E2E22;
+  }
+  .check-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #0F1A12;
+  }
+  .check-row:last-child { border-bottom: none; }
+  .badge {
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .badge-PASS { background: #00C96B22; color: #00C96B; border: 1px solid #00C96B44; }
+  .badge-WARNING { background: #F5A62322; color: #F5A623; border: 1px solid #F5A62344; }
+  .badge-FAIL { background: #FF444422; color: #FF4444; border: 1px solid #FF444444; }
+  .badge-ERROR { background: #88888822; color: #888; border: 1px solid #88888844; }
+  .badge-SKIPPED { background: #88888822; color: #888; border: 1px solid #88888844; }
+  .check-info { flex: 1; }
+  .check-name { font-size: 0.9rem; font-weight: 500; }
+  .check-explanation { font-size: 0.82rem; color: #8A9B8E; margin-top: 3px; line-height: 1.4; }
+
+  /* Fix suggestions */
+  .fixes-section {
+    background: #120A0A;
+    border: 1px solid #FF444422;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .fixes-title { font-size: 0.9rem; font-weight: 600; color: #FF6B6B; margin-bottom: 16px; }
+  .fix-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1E0A0A; }
+  .fix-item:last-child { border-bottom: none; }
+  .fix-num { color: #FF4444; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; width: 20px; }
+  .fix-text { font-size: 0.85rem; color: #ccc; }
+  .fix-name { font-weight: 600; color: #fff; }
+
+  /* Reset button */
+  .reset-btn {
+    background: transparent;
+    border: 1px solid #1E2E22;
+    border-radius: 8px;
+    color: #8A9B8E;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    padding: 10px 20px;
+    transition: all 0.2s;
+    margin-bottom: 32px;
+  }
+  .reset-btn:hover { border-color: #00C96B; color: #00C96B; }
+
+  /* Footer */
+  footer { text-align: center; color: #2A3E2E; font-size: 0.8rem; margin-top: 60px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>GMC <span>Compliance</span> Check</h1>
+    <p>Scan your Shopify store for Google Merchant Center compliance issues</p>
+  </div>
+
+  <div class="scan-form">
+    <input type="text" id="urlInput" placeholder="https://yourstore.com" />
+    <button id="scanBtn" onclick="startScan()">Scan Store</button>
+  </div>
+
+  <div class="error-banner" id="errorBanner"></div>
+
+  <div class="progress-section" id="progressSection">
+    <div class="progress-title">Scanning in progress...</div>
+    <div class="steps" id="stepsContainer">
+      <div class="step" id="step-trust"><span class="step-icon">⏳</span> Trust</div>
+      <div class="step" id="step-links"><span class="step-icon">⏳</span> Links</div>
+      <div class="step" id="step-policies"><span class="step-icon">⏳</span> Policies</div>
+      <div class="step" id="step-products"><span class="step-icon">⏳</span> Products</div>
+      <div class="step" id="step-images"><span class="step-icon">⏳</span> Images</div>
+    </div>
+  </div>
+
+  <div class="results-section" id="resultsSection">
+    <button class="reset-btn" onclick="resetUI()">← Scan another store</button>
+    <div id="scoreBanner"></div>
+    <div id="intelPanel"></div>
+    <div id="checksContainer"></div>
+    <div id="fixesSection"></div>
+  </div>
+</div>
+
+<footer>Powered by Icarus Agency</footer>
+
+<script>
+let eventSource = null;
+
+function startScan() {
+  let url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
+
+  resetResults();
+  document.getElementById('scanBtn').disabled = true;
+  document.getElementById('progressSection').classList.add('visible');
+  document.getElementById('errorBanner').classList.remove('visible');
+
+  // Mark first step as running
+  setStepRunning('trust');
+
+  eventSource = new EventSource('/api/scan/stream?url=' + encodeURIComponent(url));
+
+  eventSource.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+
+    if (data.type === 'progress') {
+      setStepDone(data.step);
+      // Set next step as running
+      const steps = ['trust', 'links', 'policies', 'products', 'images'];
+      const idx = steps.indexOf(data.step);
+      if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
+    }
+
+    if (data.type === 'complete') {
+      eventSource.close();
+      showResults(data.report);
+    }
+
+    if (data.type === 'error') {
+      eventSource.close();
+      showError(data.message || 'Scan failed');
+    }
+  };
+
+  eventSource.onerror = () => {
+    eventSource.close();
+    showError('Connection lost. Please try again.');
+  };
+}
+
+function setStepRunning(name) {
+  const el = document.getElementById('step-' + name);
+  if (!el) return;
+  el.className = 'step running';
+  el.innerHTML = '<span class="step-icon spinner">⟳</span> ' + capitalize(name);
+}
+
+function setStepDone(name) {
+  const el = document.getElementById('step-' + name);
+  if (!el) return;
+  el.className = 'step done';
+  el.innerHTML = '<span class="step-icon">✓</span> ' + capitalize(name);
+}
+
+function setStepError(name) {
+  const el = document.getElementById('step-' + name);
+  if (!el) return;
+  el.className = 'step error';
+  el.innerHTML = '<span class="step-icon">✗</span> ' + capitalize(name);
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+function showError(msg) {
+  document.getElementById('progressSection').classList.remove('visible');
+  const banner = document.getElementById('errorBanner');
+  banner.textContent = '⚠ ' + msg;
+  banner.classList.add('visible');
+  document.getElementById('scanBtn').disabled = false;
+}
+
+function showResults(report) {
+  document.getElementById('progressSection').classList.remove('visible');
+  document.getElementById('resultsSection').classList.add('visible');
+  document.getElementById('scanBtn').disabled = false;
+
+  const score = report.score || {};
+  const allChecks = report.all_checks || [];
+
+  // Score banner
+  const pct = score.score_pct || 0;
+  const cls = pct >= 80 ? 'excellent' : pct >= 60 ? 'good' : 'poor';
+  document.getElementById('scoreBanner').innerHTML = `
+    <div class="score-banner ${cls}">
+      <div>
+        <div class="score-number ${cls}">${pct}%</div>
+        <div class="score-label">${score.passed || 0} of ${score.total || 0} checks passed</div>
+      </div>
+      <div class="score-stats">
+        <div class="score-stat"><div class="val pass-val">${score.passed || 0}</div><div class="lbl">PASS</div></div>
+        <div class="score-stat"><div class="val warn-val">${score.warnings || 0}</div><div class="lbl">WARN</div></div>
+        <div class="score-stat"><div class="val fail-val">${score.failed || 0}</div><div class="lbl">FAIL</div></div>
+      </div>
+    </div>`;
+
+  // Store intelligence
+  const trust = report.trust || {};
+  const whois = trust.whois || {};
+  const sa = trust.scamadviser || {};
+  const tp = trust.trustpilot || {};
+  document.getElementById('intelPanel').innerHTML = `
+    <div class="intel-panel">
+      <div class="intel-item"><div class="intel-label">Domain Age</div><div class="intel-value">${whois.domain_age_days != null ? whois.domain_age_days + ' days' : 'Unknown'}</div></div>
+      <div class="intel-item"><div class="intel-label">Registrar</div><div class="intel-value">${whois.registrar || 'Unknown'}</div></div>
+      <div class="intel-item"><div class="intel-label">ScamAdviser</div><div class="intel-value">${sa.score != null ? sa.score + '/100' : 'N/A'}</div></div>
+      <div class="intel-item"><div class="intel-label">Trustpilot</div><div class="intel-value">${tp.score != null ? tp.score + '/5' : 'Not found'}</div></div>
+      <div class="intel-item"><div class="intel-label">Reviews</div><div class="intel-value">${tp.review_count != null ? tp.review_count : '—'}</div></div>
+    </div>`;
+
+  // Checks by category
+  const categories = {};
+  for (const check of allChecks) {
+    const cat = check.category || 'Other';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(check);
+  }
+  let checksHtml = '';
+  for (const [cat, checks] of Object.entries(categories)) {
+    checksHtml += `<div class="category"><div class="category-title">${cat}</div>`;
+    for (const c of checks) {
+      checksHtml += `
+        <div class="check-row">
+          <span class="badge badge-${c.status}">${c.status}</span>
+          <div class="check-info">
+            <div class="check-name">${c.name}</div>
+            ${c.explanation ? `<div class="check-explanation">${c.explanation}</div>` : ''}
+          </div>
+        </div>`;
+    }
+    checksHtml += '</div>';
+  }
+  document.getElementById('checksContainer').innerHTML = checksHtml;
+
+  // Fix suggestions
+  const issues = allChecks.filter(c => c.status === 'FAIL' || c.status === 'WARNING');
+  if (issues.length > 0) {
+    let fixHtml = '<div class="fixes-section"><div class="fixes-title">⚠ Issues to fix</div>';
+    issues.forEach((c, i) => {
+      fixHtml += `<div class="fix-item"><div class="fix-num">${i + 1}.</div><div class="fix-text"><span class="fix-name">[${c.status}] ${c.name}</span>${c.explanation ? ' — ' + c.explanation : ''}</div></div>`;
+    });
+    fixHtml += '</div>';
+    document.getElementById('fixesSection').innerHTML = fixHtml;
+  }
+}
+
+function resetResults() {
+  document.getElementById('resultsSection').classList.remove('visible');
+  document.getElementById('scoreBanner').innerHTML = '';
+  document.getElementById('intelPanel').innerHTML = '';
+  document.getElementById('checksContainer').innerHTML = '';
+  document.getElementById('fixesSection').innerHTML = '';
+  ['trust','links','policies','products','images'].forEach(s => {
+    const el = document.getElementById('step-' + s);
+    if (el) { el.className = 'step'; el.innerHTML = '<span class="step-icon">⏳</span> ' + capitalize(s); }
+  });
+}
+
+function resetUI() {
+  if (eventSource) { eventSource.close(); eventSource = null; }
+  resetResults();
+  document.getElementById('progressSection').classList.remove('visible');
+  document.getElementById('errorBanner').classList.remove('visible');
+  document.getElementById('scanBtn').disabled = false;
+  document.getElementById('urlInput').value = '';
+}
+
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startScan();
+});
+</script>
+</body>
+</html>

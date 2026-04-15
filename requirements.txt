@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+httpx
+beautifulsoup4
+python-whois
+playwright
+Pillow
+imagehash
+sse-starlette

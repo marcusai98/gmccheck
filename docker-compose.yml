@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  gmccheck:
+    build: .
+    container_name: gmccheck
+    ports:
+      - "8082:8082"
+    environment:
+      - SCRAPERAPI_KEY=${SCRAPERAPI_KEY:-}
+    restart: unless-stopped
