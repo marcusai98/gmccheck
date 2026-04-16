@@ -111,7 +111,7 @@ def extract_all_checks(results: dict) -> list[dict]:
             "category": "Products",
             "status": col_status,
             "explanation": (
-                f"{len(non_pass)} van {len(col_results)} collectie(s) buiten het 5–10 bereik."
+                f"{len(non_pass)} of {len(col_results)} collection(s) outside the 5-10 range."
                 if non_pass else
                 f"Alle {len(col_results)} collectie(s) hebben 5–10 producten."
             ),
@@ -119,7 +119,7 @@ def extract_all_checks(results: dict) -> list[dict]:
         })
     else:
         checks.append({"name": "Producten per collectie (5–10)", "category": "Products",
-                       "status": "WARNING", "explanation": "Geen collecties gevonden."})
+                       "status": "WARNING", "explanation": "No collections found."})
 
     # Image check
     images = results.get("images", {})
@@ -146,12 +146,12 @@ def format_report(store_url: str, results: dict, all_checks: list[dict], score: 
     lines.append("=" * 60)
 
     lines.append("\n── COMPLIANCE SCORE ──────────────────────────────────")
-    lines.append(f"  Totaal checks:     {score['total']}")
-    lines.append(f"  Geslaagd:          {score['passed']}  ✓")
-    lines.append(f"  Gefaald:           {score['failed']}  ✗")
-    lines.append(f"  Waarschuwingen:    {score['warnings']}  ⚠")
-    lines.append(f"  Fouten/Overgeslagen: {score['errors'] + score['skipped']}")
-    lines.append(f"  Slagingspercentage: {score['score_pct']}%")
+    lines.append(f"  Total checks:      {score['total']}")
+    lines.append(f"  Passed:            {score['passed']}  ✓")
+    lines.append(f"  Failed:            {score['failed']}  ✗")
+    lines.append(f"  Warnings:          {score['warnings']}  ⚠")
+    lines.append(f"  Errors/Skipped:    {score['errors'] + score['skipped']}")
+    lines.append(f"  Pass rate:         {score['score_pct']}%")
 
     # Store intelligence
     trust = results.get("trust", {})
@@ -159,10 +159,10 @@ def format_report(store_url: str, results: dict, all_checks: list[dict], score: 
     sa = trust.get("scamadviser", {})
     tp = trust.get("trustpilot", {})
     lines.append("\n── STORE INTELLIGENCE ────────────────────────────────")
-    lines.append(f"  Domeinleeftijd:    {whois.get('domain_age_days', 'onbekend')} dagen")
-    lines.append(f"  Registrar:         {whois.get('registrar', 'onbekend')}")
-    lines.append(f"  ScamAdviser:       {sa.get('score', 'onbekend')}/100")
-    lines.append(f"  Trustpilot:        {tp.get('score', 'niet gevonden')}/5  ({tp.get('review_count', 0)} reviews)")
+    lines.append(f"  Domain age:        {whois.get('domain_age_days', 'unknown')} days")
+    lines.append(f"  Registrar:         {whois.get('registrar', 'unknown')}")
+    lines.append(f"  ScamAdviser:       {sa.get('score', 'unknown')}/100")
+    lines.append(f"  Trustpilot:        {tp.get('score', 'not found')}/5  ({tp.get('review_count', 0)} reviews)")
 
     # Group issues by category
     categories = {}

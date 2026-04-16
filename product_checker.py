@@ -193,11 +193,11 @@ async def check_collection(client, base_url, collection, api_key=None) -> dict:
         explanation = "Lege collectie — 0 producten. GMC kan lege collecties penaliseren."
     elif count < MIN_PRODUCTS:
         status = "WARNING"
-        explanation = (f"{count} product(en). Minimaal {MIN_PRODUCTS} aanbevolen voor een "
+        explanation = (f"{count} product(en). Minimaal {MIN_PRODUCTS} recommended for a "
                        "gevulde collectie die GMC reviewers overtuigt.")
     else:
         status = "PASS"
-        explanation = f"{count} producten — voldoet aan de minimumvereiste van {MIN_PRODUCTS}."
+        explanation = f"{count} products — meets the minimum requirement of {MIN_PRODUCTS}."
 
     return {**collection, "product_count": count, "status": status,
             "explanation": explanation, "method": method}
@@ -207,7 +207,7 @@ async def check_total_products(client, base_url, api_key=None) -> dict:
     data = await fetch_json(client, f"{base_url}/products.json?limit=250", api_key)
     if not data:
         return {"total_products": None, "status": "WARNING",
-                "explanation": "Totaal productaantal niet opgehaald."}
+                "explanation": "Total product count could not be retrieved."}
     count = len(data.get("products", []))
     return {"total_products": count,
             "status": "PASS" if count > 0 else "FAIL",
@@ -247,10 +247,10 @@ async def run_product_checks(store_url: str, scraperapi_key: str | None = None) 
                 "checks": {
                     "collections": [],
                     "empty_collections": {"status": "WARNING",
-                        "explanation": "Geen collecties gevonden of store niet toegankelijk.", "count": 0},
+                        "explanation": "No collections found or store not accessible.", "count": 0},
                     "thin_collections": {"count": 0, "items": []},
                     "total_products": {"total_products": None, "status": "WARNING",
-                        "explanation": "Geen productdata opgehaald."},
+                        "explanation": "No product data retrieved."},
                 },
             }
 
@@ -266,7 +266,7 @@ async def run_product_checks(store_url: str, scraperapi_key: str | None = None) 
         empty_status = "FAIL" if empty else "PASS"
         empty_explanation = (
             f"{len(empty)} lege collectie(s): " + ", ".join(c["title"] for c in empty)
-            if empty else "Geen lege collecties."
+            if empty else "No empty collections."
         )
 
         all_statuses = [c["status"] for c in col_results]

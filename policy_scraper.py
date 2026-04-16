@@ -237,7 +237,7 @@ async def check_shipping_policy(client, base_url, api_key=None) -> dict:
     if not html:
         return {
             "status": "FAIL", "url": None,
-            "explanation": "Shipping policy pagina niet gevonden op verwachte URLs.",
+            "explanation": "Shipping policy page not found at expected URLs.",
             "critical_missing": list(SHIPPING_CRITICAL.keys()),
             "recommended_missing": list(SHIPPING_RECOMMENDED.keys()),
         }
@@ -252,14 +252,14 @@ async def check_shipping_policy(client, base_url, api_key=None) -> dict:
     if critical_missing:
         status = "FAIL"
         missing_labels = ", ".join(FIELD_LABELS[f] for f in critical_missing)
-        explanation = f"Kritieke velden ontbreken: {missing_labels}."
+        explanation = f"Critical fields missing: {missing_labels}."
     elif recommended_missing:
         status = "WARNING"
         missing_labels = ", ".join(FIELD_LABELS[f] for f in recommended_missing)
-        explanation = f"Aanbevolen velden ontbreken: {missing_labels}."
+        explanation = f"Recommended fields missing: {missing_labels}."
     else:
         status = "PASS"
-        explanation = "Shipping policy bevat alle vereiste en aanbevolen GMC-velden."
+        explanation = "Shipping policy contains all required and recommended GMC fields."
 
     return {
         "status": status, "url": url, "explanation": explanation,
@@ -281,7 +281,7 @@ async def check_duplicate_shipping_policy(client, base_url, api_key=None) -> dic
                 pages[url] = text
 
     if len(pages) < 2:
-        return {"status": "PASS", "explanation": "Één shipping policy pagina gevonden.", "duplicates": []}
+        return {"status": "PASS", "explanation": "One shipping policy page found.", "duplicates": []}
 
     urls = list(pages.keys())
     duplicates = []
@@ -293,10 +293,10 @@ async def check_duplicate_shipping_policy(client, base_url, api_key=None) -> dic
 
     if duplicates:
         return {"status": "FAIL",
-                "explanation": f"{len(duplicates)} duplicaat shipping policy pagina(s) gevonden. GMC verwacht één definitieve pagina.",
+                "explanation": f"{len(duplicates)} duplicate shipping policy page(s) found. GMC expects one definitive page.",
                 "duplicates": duplicates}
 
-    return {"status": "PASS", "explanation": "Meerdere shipping pagina's met unieke content gevonden.", "duplicates": []}
+    return {"status": "PASS", "explanation": "Multiple shipping pages with unique content found.", "duplicates": []}
 
 
 async def check_refund_policy(client, base_url, api_key=None) -> dict:
@@ -305,7 +305,7 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
     if not html:
         return {
             "status": "FAIL", "url": None,
-            "explanation": "Refund/retourbeleid pagina niet gevonden.",
+            "explanation": "Refund/return policy page not found.",
             "critical_missing": list(REFUND_CRITICAL.keys()),
             "recommended_missing": list(REFUND_RECOMMENDED.keys()),
         }
@@ -320,14 +320,14 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
     if critical_missing:
         status = "FAIL"
         missing_labels = ", ".join(FIELD_LABELS[f] for f in critical_missing)
-        explanation = f"Kritieke velden ontbreken: {missing_labels}."
+        explanation = f"Critical fields missing: {missing_labels}."
     elif recommended_missing:
         status = "WARNING"
         missing_labels = ", ".join(FIELD_LABELS[f] for f in recommended_missing)
-        explanation = f"Aanbevolen velden ontbreken: {missing_labels}."
+        explanation = f"Recommended fields missing: {missing_labels}."
     else:
         status = "PASS"
-        explanation = "Retourbeleid bevat alle vereiste en aanbevolen GMC-velden."
+        explanation = "Return policy contains all required and recommended GMC fields."
 
     return {
         "status": status, "url": url, "explanation": explanation,
@@ -343,16 +343,16 @@ async def check_customer_service_hours(client, base_url, api_key=None) -> dict:
 
     if not html:
         return {"status": "WARNING", "url": None,
-                "explanation": "Contactpagina niet gevonden. Klantenservice uren niet verifieerbaar."}
+                "explanation": "Contact page not found. Customer service hours could not be verified."}
 
     text = BeautifulSoup(html, "html.parser").get_text()
     hours_found = any(re.search(p, text, re.IGNORECASE) for p in HOURS_PATTERNS)
 
     if hours_found:
         return {"status": "PASS", "url": url,
-                "explanation": "Klantenservice uren gevonden op contactpagina."}
+                "explanation": "Customer service hours found on contact page."}
     return {"status": "WARNING", "url": url,
-            "explanation": "Contactpagina gevonden maar geen service uren gedetecteerd. Voeg toe wanneer klanten contact kunnen opnemen."}
+            "explanation": "Contact page found but no service hours detected. Add when customers can reach you."}
 
 
 # ---------------------------------------------------------------------------

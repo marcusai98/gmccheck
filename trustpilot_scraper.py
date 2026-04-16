@@ -134,9 +134,9 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
         if html: method = "playwright"
 
     if not html:
-        hint = "" if api_key else " Stel SCRAPERAPI_KEY in voor VPS gebruik."
+        hint = "" if api_key else "  Set SCRAPERAPI_KEY for VPS use."
         return {"domain": domain, "trustpilot_url": tp_url, "status": "ERROR",
-                "explanation": f"Kon Trustpilot niet bereiken.{hint}",
+                "explanation": f"Could not reach Trustpilot.{hint}",
                 "score": None, "review_count": None, "score_label": None,
                 "present": False, "fetch_method": method}
 
@@ -146,7 +146,7 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
     page_text = soup.get_text().lower()
     if "page not found" in page_text or ("404" in page_text and len(page_text) < 500):
         return {"domain": domain, "trustpilot_url": tp_url, "status": "WARNING",
-                "explanation": "Geen Trustpilot pagina gevonden. Geen FAIL maar verhoogt review risico.",
+                "explanation": "No Trustpilot page found. Not a FAIL but increases review risk.",
                 "score": None, "review_count": None, "score_label": None,
                 "present": False, "fetch_method": method}
 
@@ -173,19 +173,19 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
     score_label = next((l for (lo,hi),l in label_map.items() if score and lo <= score <= hi), None)
 
     if score is None:
-        status_label, explanation = "WARNING", "Pagina geladen maar score niet gevonden. Handmatige controle aanbevolen."
+        status_label, explanation = "WARNING", "Page loaded but score not found. Manual check recommended."
     elif score < SCORE_FAIL:
         status_label = "FAIL"
-        explanation = (f"Score {score:.1f}/5 ({score_label}) — onder de harde grens van 3.0. "
-            "GMC vereist minimaal 3 sterren op Trustpilot.")
+        explanation = (f"Score {score:.1f}/5 ({score_label}) — onder de harde grens of 3.0. "
+            "GMC requires a minimum of 3 stars on Trustpilot.")
     elif review_count is not None and review_count < MIN_REVIEWS:
         status_label = "WARNING"
         explanation = (f"Score {score:.1f}/5 maar slechts {review_count} review(s) — "
             "te weinig reviews voor een betrouwbaar trust signaal.")
     else:
         status_label = "PASS"
-        explanation = (f"Score {score:.1f}/5 ({score_label}) op basis van "
-            f"{review_count or 'onbekend'} reviews — voldoet aan de 3.0 grens.")
+        explanation = (f"Score {score:.1f}/5 ({score_label}) op basis of "
+            f"{review_count or 'unknown'} reviews — meets the 3.0 threshold.")
 
     return {"domain": domain, "trustpilot_url": tp_url, "status": status_label,
             "explanation": explanation, "score": score, "review_count": review_count,

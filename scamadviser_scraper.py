@@ -176,15 +176,15 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
     elif api_key:
         status, html = await _fetch_scraperapi(check_url, api_key)
         if html: method = "scraperapi+render"
-    # 3. Direct als laatste fallback (score zal waarschijnlijk ontbreken)
+    # 3. Direct as last fallback (score will likely be missing)
     if not html:
         status, html = await _fetch_direct(check_url)
         if html: method = "direct_no_js"
 
     if not html:
-        hint = "" if api_key else " Stel SCRAPERAPI_KEY in voor VPS gebruik."
+        hint = "" if api_key else "  Set SCRAPERAPI_KEY for VPS use."
         return {"domain": domain, "scamadviser_url": check_url, "status": "ERROR",
-                "explanation": f"Kon ScamAdviser niet bereiken.{hint}",
+                "explanation": f"Could not reach ScamAdviser.{hint}",
                 "score": None, "risk_factors": [], "fetch_method": method}
 
     score = parse_score(html)
@@ -192,7 +192,7 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
 
     if score is None:
         return {"domain": domain, "scamadviser_url": check_url, "status": "WARNING",
-                "explanation": "ScamAdviser pagina geladen maar score niet gevonden. Handmatige controle aanbevolen.",
+                "explanation": "ScamAdviser page loaded but score not found. Manual check recommended.",
                 "score": None, "risk_factors": risk_factors, "fetch_method": method}
 
     if score < SCORE_FAIL:
@@ -206,7 +206,7 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
         explanation = f"ScamAdviser score {score}/100 — geen grote bezorgdheden."
 
     if risk_factors:
-        explanation += f" Risicofactoren: {', '.join(risk_factors)}."
+        explanation += f" Risk factors: {', '.join(risk_factors)}."
 
     return {"domain": domain, "scamadviser_url": check_url, "status": status_label,
             "explanation": explanation, "score": score, "score_out_of": 100,
