@@ -246,7 +246,19 @@ nav {
   backdrop-filter: var(--blur); display: none;
 }
 .progress-card.visible { display: block; }
-.progress-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.progress-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.progress-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+.progress-pct { font-size: 0.78rem; font-weight: 700; color: var(--accent); }
+.progress-track {
+  width: 100%; height: 4px; background: rgba(255,255,255,0.06);
+  border-radius: 99px; margin-bottom: 16px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; width: 0%; border-radius: 99px;
+  background: linear-gradient(90deg, #00C96B, #00ff88);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 8px rgba(0,201,107,0.5);
+}
 .steps { display: flex; gap: 8px; flex-wrap: wrap; }
 .step {
   display: flex; align-items: center; gap: 7px;
@@ -454,7 +466,11 @@ footer span { color: var(--accent); }
   <div style="max-width:660px;margin:0 auto;padding:0 20px;">
     <div class="error-card" id="errorBanner"></div>
     <div class="progress-card" id="progressSection">
-      <div class="progress-label">Scanning in progress</div>
+      <div class="progress-header">
+        <div class="progress-label">Scanning in progress</div>
+        <div class="progress-pct" id="progressPct">0%</div>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
       <div class="steps" id="stepsContainer">
         <div class="step" id="step-trust"><span>⏳</span> Trust</div>
         <div class="step" id="step-links"><span>⏳</span> Links</div>
@@ -490,6 +506,9 @@ function startScan() {
   document.getElementById('scanBtn').disabled = true;
   document.getElementById('progressSection').classList.add('visible');
   document.getElementById('errorBanner').classList.remove('visible');
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressPct').textContent = '0%';
+  completedSteps = 0;
   setStepRunning('trust');
 
   // Re-show scan input at top
@@ -504,11 +523,19 @@ function startScan() {
 
   eventSource = new EventSource('/api/scan/stream?url=' + encodeURIComponent(url));
   const steps = ['trust','links','policies','products','images'];
+  let completedSteps = 0;
+
+  function updateProgress(pct) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+  }
 
   eventSource.onmessage = (e) => {
     const data = JSON.parse(e.data);
     if (data.type === 'progress') {
       setStepDone(data.step);
+      completedSteps++;
+      updateProgress(Math.round((completedSteps / steps.length) * 100));
       const idx = steps.indexOf(data.step);
       if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
     }
