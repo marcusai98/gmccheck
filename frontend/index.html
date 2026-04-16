@@ -742,9 +742,10 @@ function showResults(report, url) {
   document.getElementById('resultsSection').classList.add('visible');
   document.getElementById('scanBtn').disabled = false;
 
-  // Save to this browser's local history (never global)
   const score = report.score || {};
   const domain = url.replace('https://','').replace('http://','').split('/')[0];
+
+  // Save to this browser's local history (never global)
   saveToLocalHistory({
     scan_id: report.scan_id,
     url, domain,
@@ -755,8 +756,6 @@ function showResults(report, url) {
     scanned_at: new Date().toISOString(),
   });
   loadHistory();
-
-  const score = report.score || {};
   const allChecks = report.all_checks || [];
   const pct = score.score_pct || 0;
   const cls = pct >= 80 ? 'high' : pct >= 60 ? 'mid' : 'low';
