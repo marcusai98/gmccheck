@@ -72,9 +72,12 @@ async def run_whois_check(store_url: str) -> dict:
     domain = get_domain(store_url)
 
     try:
-        # whois is blocking — run in thread pool to stay async-friendly
+        # whois is blocking — run in thread pool with hard timeout
         loop = asyncio.get_event_loop()
-        w = await loop.run_in_executor(None, whois.whois, domain)
+        w = await asyncio.wait_for(
+            loop.run_in_executor(None, whois.whois, domain),
+            timeout=12
+        )
     except Exception as e:
         return {
             "domain": domain,

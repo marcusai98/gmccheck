@@ -120,7 +120,7 @@ async def _fetch_scraperapi(url: str, key: str) -> tuple[int, str | None]:
     """
     async with httpx.AsyncClient(follow_redirects=True) as c:
         try:
-            r = await c.get(scraperapi_url(url, key), timeout=90)  # render timeout is langer
+            r = await c.get(scraperapi_url(url, key), timeout=45)  # residential proxy
             return r.status_code, r.text if r.status_code == 200 else None
         except httpx.RequestError:
             return 0, None

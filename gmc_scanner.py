@@ -96,12 +96,14 @@ def extract_all_checks(results: dict) -> list[dict]:
 
     # Trust checks
     trust = results.get("trust", {})
+    trust_timed_out = not trust.get("whois") and trust.get("status") == "WARNING"
+    trust_fallback = {"status": "WARNING", "explanation": "Trust check timed out. Retry or verify manually."}
     checks.append({"name": "Domain age", "category": "Trust",
-                   **trust.get("whois", {"status": "ERROR"})})
+                   **trust.get("whois", trust_fallback)})
     checks.append({"name": "ScamAdviser score", "category": "Trust",
-                   **trust.get("scamadviser", {"status": "ERROR"})})
+                   **trust.get("scamadviser", trust_fallback)})
     checks.append({"name": "Trustpilot score", "category": "Trust",
-                   **trust.get("trustpilot", {"status": "ERROR"})})
+                   **trust.get("trustpilot", trust_fallback)})
 
     # Link checks
     links_result = results.get("links", {})
