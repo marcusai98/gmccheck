@@ -3,258 +3,464 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GMC Compliance Check</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>GMC Check — Google Merchant Center Compliance Scanner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    background: #080C09;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 40px 20px 80px;
-  }
+:root {
+  --bg: #080C09;
+  --glass: rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.09);
+  --accent: #00C96B;
+  --accent-dim: rgba(0,201,107,0.12);
+  --accent-glow: rgba(0,201,107,0.25);
+  --text: #FFFFFF;
+  --muted: rgba(255,255,255,0.45);
+  --faint: rgba(255,255,255,0.07);
+  --fail: #FF453A;
+  --warn: #FF9F0A;
+  --pass: #30D158;
+  --blur: blur(28px) saturate(180%);
+}
 
-  .container { max-width: 900px; margin: 0 auto; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
 
-  /* Header */
-  .header { text-align: center; margin-bottom: 48px; padding-top: 20px; }
-  .header h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px; }
-  .header h1 span { color: #00C96B; }
-  .header p { color: #8A9B8E; margin-top: 10px; font-size: 1rem; }
+/* ── Ambient background ── */
+.ambient {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+.ambient::before {
+  content: '';
+  position: absolute; top: -300px; left: 50%; transform: translateX(-50%);
+  width: 900px; height: 600px;
+  background: radial-gradient(ellipse, rgba(0,201,107,0.08) 0%, transparent 65%);
+  animation: pulse 8s ease-in-out infinite alternate;
+}
+.ambient::after {
+  content: '';
+  position: absolute; bottom: -200px; right: -100px;
+  width: 600px; height: 500px;
+  background: radial-gradient(ellipse, rgba(0,122,255,0.06) 0%, transparent 65%);
+}
+@keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
 
-  /* Scan form */
-  .scan-form {
-    display: flex;
-    gap: 12px;
-    background: #0F1A12;
-    border: 1px solid #1E2E22;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 32px;
-  }
-  .scan-form input {
-    flex: 1;
-    background: #0A140C;
-    border: 1px solid #1E2E22;
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    font-size: 1rem;
-    padding: 14px 16px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .scan-form input:focus { border-color: #00C96B; }
-  .scan-form input::placeholder { color: #4A5E4E; }
-  .scan-form button {
-    background: #00C96B;
-    border: none;
-    border-radius: 8px;
-    color: #080C09;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
-    padding: 14px 28px;
-    transition: background 0.2s, transform 0.1s;
-    white-space: nowrap;
-  }
-  .scan-form button:hover { background: #00e07a; }
-  .scan-form button:active { transform: scale(0.98); }
-  .scan-form button:disabled { background: #1E2E22; color: #4A5E4E; cursor: not-allowed; }
+/* ── Layout ── */
+.page { position: relative; z-index: 1; }
 
-  /* Progress */
-  .progress-section { display: none; margin-bottom: 32px; }
-  .progress-section.visible { display: block; }
-  .progress-title { font-size: 0.85rem; color: #8A9B8E; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
-  .steps { display: flex; gap: 8px; flex-wrap: wrap; }
-  .step {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: #0F1A12;
-    border: 1px solid #1E2E22;
-    border-radius: 8px;
-    padding: 10px 16px;
-    font-size: 0.9rem;
-    color: #4A5E4E;
-    transition: all 0.3s;
-    min-width: 120px;
-  }
-  .step.running { border-color: #00C96B44; color: #fff; }
-  .step.done { border-color: #00C96B; color: #00C96B; }
-  .step.error { border-color: #FF4444; color: #FF4444; }
-  .step-icon { font-size: 1rem; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .spinner { display: inline-block; animation: spin 1s linear infinite; }
+/* ── NAV ── */
+nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 40px; max-width: 1100px; margin: 0 auto;
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1rem; }
+.nav-logo-icon {
+  width: 32px; height: 32px;
+  background: var(--accent-dim); border: 1px solid rgba(0,201,107,0.25);
+  border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+}
+.nav-badge {
+  font-size: 0.7rem; background: var(--accent-dim); color: var(--accent);
+  border: 1px solid rgba(0,201,107,0.2); border-radius: 20px; padding: 3px 10px;
+  font-weight: 500;
+}
 
-  /* Error banner */
-  .error-banner {
-    display: none;
-    background: #1A0808;
-    border: 1px solid #FF4444;
-    border-radius: 8px;
-    color: #FF6B6B;
-    padding: 16px;
-    margin-bottom: 24px;
-  }
-  .error-banner.visible { display: block; }
+/* ── HERO ── */
+.hero {
+  text-align: center;
+  padding: 60px 20px 0;
+  max-width: 700px; margin: 0 auto;
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--accent-dim); border: 1px solid rgba(0,201,107,0.2);
+  border-radius: 20px; padding: 6px 16px;
+  font-size: 0.78rem; font-weight: 500; color: var(--accent);
+  letter-spacing: 0.3px; margin-bottom: 24px;
+}
+.hero-eyebrow::before { content: '●'; font-size: 0.5rem; animation: blink 2s infinite; }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-  /* Results */
-  .results-section { display: none; }
-  .results-section.visible { display: block; }
+.hero h1 {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 800;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+  margin-bottom: 18px;
+  background: linear-gradient(160deg, #fff 0%, rgba(255,255,255,0.65) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero h1 em {
+  font-style: normal;
+  background: linear-gradient(135deg, #00C96B, #00A855);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.hero p {
+  color: var(--muted); font-size: 1.05rem; line-height: 1.7;
+  margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto;
+}
 
-  /* Score banner */
-  .score-banner {
-    border-radius: 12px;
-    margin-bottom: 24px;
-    padding: 24px 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .score-banner.excellent { background: #0A1F0F; border: 1px solid #00C96B44; }
-  .score-banner.good { background: #1A1A0A; border: 1px solid #F5A62344; }
-  .score-banner.poor { background: #1A0A0A; border: 1px solid #FF444444; }
-  .score-number { font-size: 2.8rem; font-weight: 700; }
-  .score-number.excellent { color: #00C96B; }
-  .score-number.good { color: #F5A623; }
-  .score-number.poor { color: #FF4444; }
-  .score-label { font-size: 1rem; color: #8A9B8E; margin-top: 4px; }
-  .score-stats { display: flex; gap: 20px; text-align: center; }
-  .score-stat { }
-  .score-stat .val { font-size: 1.5rem; font-weight: 700; }
-  .score-stat .lbl { font-size: 0.75rem; color: #8A9B8E; }
-  .pass-val { color: #00C96B; }
-  .warn-val { color: #F5A623; }
-  .fail-val { color: #FF4444; }
+/* ── SCAN BOX ── */
+.scan-wrap { max-width: 620px; margin: 0 auto 16px; }
+.scan-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 18px;
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  padding: 10px 10px 10px 20px;
+  display: flex; gap: 10px; align-items: center;
+  box-shadow: 0 0 0 1px rgba(0,201,107,0) , 0 20px 60px rgba(0,0,0,0.4);
+  transition: box-shadow 0.3s;
+}
+.scan-card:focus-within {
+  box-shadow: 0 0 0 1px rgba(0,201,107,0.3), 0 20px 60px rgba(0,0,0,0.4);
+}
+.scan-card input {
+  flex: 1; background: transparent; border: none; outline: none;
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: 0.97rem;
+  padding: 8px 0;
+}
+.scan-card input::placeholder { color: rgba(255,255,255,0.22); }
+.scan-btn {
+  background: var(--accent); border: none; border-radius: 12px;
+  color: #000; cursor: pointer; font-family: 'Inter', sans-serif;
+  font-size: 0.88rem; font-weight: 700; padding: 13px 24px;
+  transition: all 0.2s; white-space: nowrap; letter-spacing: -0.1px;
+  box-shadow: 0 4px 20px rgba(0,201,107,0.35);
+}
+.scan-btn:hover { background: #00df78; transform: translateY(-1px); box-shadow: 0 8px 28px rgba(0,201,107,0.45); }
+.scan-btn:active { transform: none; }
+.scan-btn:disabled { background: rgba(255,255,255,0.08); color: var(--muted); cursor: not-allowed; box-shadow: none; transform: none; }
 
-  /* Store intelligence */
-  .intel-panel {
-    background: #0F1A12;
-    border: 1px solid #1E2E22;
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-  }
-  .intel-item { }
-  .intel-label { font-size: 0.75rem; color: #8A9B8E; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-  .intel-value { font-size: 1.1rem; font-weight: 600; }
+.scan-meta {
+  text-align: center; color: rgba(255,255,255,0.2);
+  font-size: 0.75rem; margin-bottom: 52px;
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+}
+.scan-meta span { display: flex; align-items: center; gap: 5px; }
 
-  /* Category sections */
-  .category { margin-bottom: 24px; }
-  .category-title {
-    font-size: 0.8rem;
-    color: #8A9B8E;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #1E2E22;
-  }
-  .check-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #0F1A12;
-  }
-  .check-row:last-child { border-bottom: none; }
-  .badge {
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 3px 8px;
-    white-space: nowrap;
-    flex-shrink: 0;
-    margin-top: 2px;
-  }
-  .badge-PASS { background: #00C96B22; color: #00C96B; border: 1px solid #00C96B44; }
-  .badge-WARNING { background: #F5A62322; color: #F5A623; border: 1px solid #F5A62344; }
-  .badge-FAIL { background: #FF444422; color: #FF4444; border: 1px solid #FF444444; }
-  .badge-ERROR { background: #88888822; color: #888; border: 1px solid #88888844; }
-  .badge-SKIPPED { background: #88888822; color: #888; border: 1px solid #88888844; }
-  .check-info { flex: 1; }
-  .check-name { font-size: 0.9rem; font-weight: 500; }
-  .check-explanation { font-size: 0.82rem; color: #8A9B8E; margin-top: 3px; line-height: 1.4; }
+/* ── VALUE CHIPS ── */
+.chips-row {
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+  max-width: 860px; margin: 0 auto 64px; padding: 0 20px;
+}
+.chip {
+  display: flex; align-items: center; gap: 9px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 11px 18px;
+  backdrop-filter: var(--blur); font-size: 0.83rem;
+  color: rgba(255,255,255,0.55);
+  transition: all 0.2s;
+}
+.chip:hover { border-color: rgba(0,201,107,0.25); color: rgba(255,255,255,0.8); }
+.chip-icon { font-size: 1.1rem; }
+.chip strong { color: rgba(255,255,255,0.85); font-weight: 600; display: block; font-size: 0.83rem; }
+.chip span { font-size: 0.75rem; color: rgba(255,255,255,0.38); }
 
-  /* Fix suggestions */
-  .fixes-section {
-    background: #120A0A;
-    border: 1px solid #FF444422;
-    border-radius: 12px;
-    padding: 20px 24px;
-    margin-bottom: 24px;
-  }
-  .fixes-title { font-size: 0.9rem; font-weight: 600; color: #FF6B6B; margin-bottom: 16px; }
-  .fix-item { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1E0A0A; }
-  .fix-item:last-child { border-bottom: none; }
-  .fix-num { color: #FF4444; font-weight: 700; font-size: 0.85rem; flex-shrink: 0; width: 20px; }
-  .fix-text { font-size: 0.85rem; color: #ccc; }
-  .fix-name { font-weight: 600; color: #fff; }
+/* ── VALUE CARDS ── */
+.cards-section {
+  max-width: 1000px; margin: 0 auto 80px; padding: 0 20px;
+}
+.cards-title {
+  text-align: center; font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.25);
+  margin-bottom: 28px;
+}
+.cards-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+}
+@media (max-width: 700px) { .cards-grid { grid-template-columns: 1fr; } }
+@media (max-width: 900px) and (min-width: 701px) { .cards-grid { grid-template-columns: repeat(2, 1fr); } }
 
-  /* Reset button */
-  .reset-btn {
-    background: transparent;
-    border: 1px solid #1E2E22;
-    border-radius: 8px;
-    color: #8A9B8E;
-    cursor: pointer;
-    font-family: 'Inter', sans-serif;
-    font-size: 0.9rem;
-    padding: 10px 20px;
-    transition: all 0.2s;
-    margin-bottom: 32px;
-  }
-  .reset-btn:hover { border-color: #00C96B; color: #00C96B; }
+.value-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 28px 26px;
+  backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+  transition: all 0.25s; position: relative; overflow: hidden;
+}
+.value-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+}
+.value-card:hover {
+  border-color: rgba(0,201,107,0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,201,107,0.1);
+}
+.card-icon {
+  width: 44px; height: 44px;
+  background: var(--accent-dim); border: 1px solid rgba(0,201,107,0.2);
+  border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 18px;
+}
+.card-icon.warn { background: rgba(255,159,10,0.1); border-color: rgba(255,159,10,0.2); }
+.card-icon.blue { background: rgba(0,122,255,0.1); border-color: rgba(0,122,255,0.2); }
+.value-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+.value-card p { font-size: 0.83rem; color: var(--muted); line-height: 1.6; }
+.card-stat {
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--faint);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-stat-num { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.5px; color: var(--accent); }
+.card-stat-label { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
 
-  /* Footer */
-  footer { text-align: center; color: #2A3E2E; font-size: 0.8rem; margin-top: 60px; }
+/* ── PROMISE ── */
+.promise-section {
+  max-width: 720px; margin: 0 auto 80px; padding: 0 20px; text-align: center;
+}
+.promise-card {
+  background: linear-gradient(135deg, rgba(0,201,107,0.07) 0%, rgba(0,201,107,0.03) 100%);
+  border: 1px solid rgba(0,201,107,0.15); border-radius: 24px; padding: 44px 40px;
+  backdrop-filter: var(--blur); position: relative; overflow: hidden;
+}
+.promise-card::before {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 200px; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(0,201,107,0.4), transparent);
+}
+.promise-label {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 16px;
+}
+.promise-card h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; letter-spacing: -0.5px;
+  margin-bottom: 14px; line-height: 1.2;
+}
+.promise-card p { color: var(--muted); font-size: 0.95rem; line-height: 1.7; }
+
+/* ── PROGRESS ── */
+.progress-card {
+  max-width: 620px; margin: 0 auto 20px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 18px; padding: 22px 26px;
+  backdrop-filter: var(--blur); display: none;
+}
+.progress-card.visible { display: block; }
+.progress-label { font-size: 0.7rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.steps { display: flex; gap: 8px; flex-wrap: wrap; }
+.step {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 9px; padding: 8px 14px; font-size: 0.8rem; color: var(--muted);
+  transition: all 0.3s; min-width: 100px;
+}
+.step.running { border-color: rgba(0,201,107,0.35); color: var(--text); background: rgba(0,201,107,0.07); }
+.step.done { border-color: rgba(48,209,88,0.4); color: var(--pass); background: rgba(48,209,88,0.07); }
+.step.error { border-color: rgba(255,69,58,0.3); color: var(--fail); }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { display: inline-block; animation: spin 1s linear infinite; }
+
+/* ── ERROR ── */
+.error-card {
+  max-width: 620px; margin: 0 auto 20px;
+  background: rgba(255,69,58,0.07); border: 1px solid rgba(255,69,58,0.2);
+  border-radius: 14px; padding: 14px 20px; color: #FF6B6B;
+  display: none; font-size: 0.88rem;
+}
+.error-card.visible { display: block; }
+
+/* ── RESULTS ── */
+.results { display: none; max-width: 860px; margin: 0 auto; padding: 0 20px 80px; }
+.results.visible { display: block; }
+
+.reset-btn {
+  background: transparent; border: 1px solid var(--glass-border);
+  border-radius: 10px; color: var(--muted); cursor: pointer;
+  font-family: 'Inter', sans-serif; font-size: 0.83rem; padding: 9px 18px;
+  margin-bottom: 20px; transition: all 0.2s;
+}
+.reset-btn:hover { border-color: rgba(255,255,255,0.18); color: var(--text); }
+
+.score-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 20px; padding: 28px 32px; margin-bottom: 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 20px; backdrop-filter: var(--blur);
+}
+.score-pct { font-size: 3.2rem; font-weight: 800; letter-spacing: -2px; }
+.score-pct.high { color: var(--pass); }
+.score-pct.mid { color: var(--warn); }
+.score-pct.low { color: var(--fail); }
+.score-sub { color: var(--muted); font-size: 0.88rem; margin-top: 4px; }
+.score-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.pill { border-radius: 20px; padding: 7px 14px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.pill-pass { background: rgba(48,209,88,0.1); color: var(--pass); border: 1px solid rgba(48,209,88,0.2); }
+.pill-warn { background: rgba(255,159,10,0.1); color: var(--warn); border: 1px solid rgba(255,159,10,0.2); }
+.pill-fail { background: rgba(255,69,58,0.1); color: var(--fail); border: 1px solid rgba(255,69,58,0.2); }
+
+.intel-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 18px 24px; margin-bottom: 14px;
+  display: flex; gap: 28px; flex-wrap: wrap; backdrop-filter: var(--blur);
+}
+.intel-lbl { font-size: 0.67rem; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+.intel-val { font-size: 1rem; font-weight: 600; }
+
+.checks-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 8px 0; margin-bottom: 14px; backdrop-filter: var(--blur);
+}
+.cat-header { font-size: 0.67rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); padding: 14px 22px 8px; }
+.check-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 22px; border-bottom: 1px solid var(--faint); transition: background 0.15s;
+}
+.check-row:hover { background: rgba(255,255,255,0.02); }
+.check-row:last-child { border-bottom: none; }
+.badge { border-radius: 6px; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.4px; padding: 3px 7px; flex-shrink: 0; margin-top: 2px; }
+.badge-PASS { background: rgba(48,209,88,0.12); color: var(--pass); }
+.badge-WARNING { background: rgba(255,159,10,0.12); color: var(--warn); }
+.badge-FAIL { background: rgba(255,69,58,0.12); color: var(--fail); }
+.badge-ERROR, .badge-SKIPPED { background: rgba(255,255,255,0.06); color: var(--muted); }
+.check-name { font-size: 0.86rem; font-weight: 500; }
+.check-desc { font-size: 0.78rem; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+
+.fixes-card {
+  background: rgba(255,69,58,0.05); border: 1px solid rgba(255,69,58,0.14);
+  border-radius: 16px; padding: 22px 26px; margin-bottom: 14px;
+}
+.fixes-title { font-size: 0.83rem; font-weight: 600; color: #FF6B6B; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.fix-row { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,69,58,0.07); }
+.fix-row:last-child { border-bottom: none; }
+.fix-n { color: var(--fail); font-size: 0.77rem; font-weight: 700; width: 18px; flex-shrink: 0; padding-top: 2px; }
+.fix-body { font-size: 0.8rem; color: rgba(255,255,255,0.6); line-height: 1.5; }
+.fix-name-bold { font-weight: 600; color: var(--text); }
+
+footer {
+  text-align: center; color: rgba(255,255,255,0.1);
+  font-size: 0.75rem; padding: 20px 20px 40px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+footer span { color: var(--accent); }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="header">
-    <h1>GMC <span>Compliance</span> Check</h1>
-    <p>Scan your Shopify store for Google Merchant Center compliance issues</p>
-  </div>
+<div class="ambient"></div>
+<div class="page">
 
-  <div class="scan-form">
-    <input type="text" id="urlInput" placeholder="https://yourstore.com" />
-    <button id="scanBtn" onclick="startScan()">Scan Store</button>
-  </div>
+  <!-- NAV -->
+  <nav>
+    <div class="nav-logo">
+      <div class="nav-logo-icon">🛡</div>
+      GMC Check
+    </div>
+    <div class="nav-badge">Free Tool by Icarus Agency</div>
+  </nav>
 
-  <div class="error-banner" id="errorBanner"></div>
+  <!-- HERO -->
+  <div id="heroSection">
+    <div class="hero">
+      <div class="hero-eyebrow">Live Scanner</div>
+      <h1>Is your store <em>GMC‑ready?</em></h1>
+      <p>Scan any Shopify store in 60 seconds. Get a full compliance report — trust signals, policies, product feed health, and images — before Google flags your account.</p>
+    </div>
 
-  <div class="progress-section" id="progressSection">
-    <div class="progress-title">Scanning in progress...</div>
-    <div class="steps" id="stepsContainer">
-      <div class="step" id="step-trust"><span class="step-icon">⏳</span> Trust</div>
-      <div class="step" id="step-links"><span class="step-icon">⏳</span> Links</div>
-      <div class="step" id="step-policies"><span class="step-icon">⏳</span> Policies</div>
-      <div class="step" id="step-products"><span class="step-icon">⏳</span> Products</div>
-      <div class="step" id="step-images"><span class="step-icon">⏳</span> Images</div>
+    <!-- Scan input -->
+    <div class="scan-wrap">
+      <div class="scan-card">
+        <input type="text" id="urlInput" placeholder="https://yourstore.com" autocomplete="off" />
+        <button class="scan-btn" id="scanBtn" onclick="startScan()">Scan Store →</button>
+      </div>
+    </div>
+    <div class="scan-meta">
+      <span>⏱ ~30–60 sec</span>
+      <span>🔒 No login required</span>
+      <span>📭 No data stored</span>
+    </div>
+
+    <!-- What we check chips -->
+    <div class="chips-row">
+      <div class="chip"><span class="chip-icon">🔒</span><div><strong>Trust &amp; Domain</strong><span>Age · ScamAdviser · Trustpilot</span></div></div>
+      <div class="chip"><span class="chip-icon">🔗</span><div><strong>Broken Links</strong><span>Dead pages &amp; redirect chains</span></div></div>
+      <div class="chip"><span class="chip-icon">📋</span><div><strong>Policy Pages</strong><span>Privacy · Returns · Shipping</span></div></div>
+      <div class="chip"><span class="chip-icon">📦</span><div><strong>Product Feed</strong><span>Titles · Prices · Availability</span></div></div>
+      <div class="chip"><span class="chip-icon">🖼</span><div><strong>Images</strong><span>Quality &amp; GMC requirements</span></div></div>
+    </div>
+
+    <!-- Value cards -->
+    <div class="cards-section">
+      <div class="cards-title">Why it matters</div>
+      <div class="cards-grid">
+
+        <div class="value-card">
+          <div class="card-icon">🚫</div>
+          <h3>Stop account suspensions</h3>
+          <p>Google suspends Merchant Center accounts for policy violations — often without warning. Know your risks before they shut you down.</p>
+          <div class="card-stat">
+            <div class="card-stat-num">73%</div>
+            <div class="card-stat-label">of new dropshipping stores fail at least one GMC check</div>
+          </div>
+        </div>
+
+        <div class="value-card">
+          <div class="card-icon warn">⚡</div>
+          <h3>Fix issues before launch</h3>
+          <p>Missing policy pages, low trust scores, and broken checkout flows are the top reasons Google rejects product feeds. Catch them early.</p>
+          <div class="card-stat">
+            <div class="card-stat-num">60s</div>
+            <div class="card-stat-label">full compliance scan — no setup, no account needed</div>
+          </div>
+        </div>
+
+        <div class="value-card">
+          <div class="card-icon blue">📈</div>
+          <h3>Scale with confidence</h3>
+          <p>A clean compliance score means fewer disapprovals, better ad delivery, and more budget going toward profitable campaigns instead of firefighting.</p>
+          <div class="card-stat">
+            <div class="card-stat-num">5</div>
+            <div class="card-stat-label">compliance categories checked in a single scan</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Promise -->
+    <div class="promise-section">
+      <div class="promise-card">
+        <div class="promise-label">Our Promise</div>
+        <h2>Know exactly what to fix — before Google does.</h2>
+        <p>GMC Check gives you an actionable compliance report with prioritised issues, so you spend less time guessing and more time scaling. Built by the team behind Icarus Agency — managing €25M+ in Google Ads spend.</p>
+      </div>
     </div>
   </div>
 
-  <div class="results-section" id="resultsSection">
+  <!-- SCAN STATES -->
+  <div style="max-width:660px;margin:0 auto;padding:0 20px;">
+    <div class="error-card" id="errorBanner"></div>
+    <div class="progress-card" id="progressSection">
+      <div class="progress-label">Scanning in progress</div>
+      <div class="steps" id="stepsContainer">
+        <div class="step" id="step-trust"><span>⏳</span> Trust</div>
+        <div class="step" id="step-links"><span>⏳</span> Links</div>
+        <div class="step" id="step-policies"><span>⏳</span> Policies</div>
+        <div class="step" id="step-products"><span>⏳</span> Products</div>
+        <div class="step" id="step-images"><span>⏳</span> Images</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results" id="resultsSection">
     <button class="reset-btn" onclick="resetUI()">← Scan another store</button>
     <div id="scoreBanner"></div>
     <div id="intelPanel"></div>
     <div id="checksContainer"></div>
     <div id="fixesSection"></div>
   </div>
-</div>
 
-<footer>Powered by Icarus Agency</footer>
+  <footer>Built by <span>Icarus Agency</span> · Free to use · No account required</footer>
+</div>
 
 <script>
 let eventSource = null;
@@ -265,171 +471,128 @@ function startScan() {
   if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
 
   resetResults();
+  document.getElementById('heroSection').style.display = 'none';
   document.getElementById('scanBtn').disabled = true;
   document.getElementById('progressSection').classList.add('visible');
   document.getElementById('errorBanner').classList.remove('visible');
-
-  // Mark first step as running
   setStepRunning('trust');
 
+  // Re-show scan input at top
+  const scanWrap = document.createElement('div');
+  scanWrap.id = 'topScan';
+  scanWrap.style.cssText = 'max-width:620px;margin:20px auto;padding:0 20px;';
+  scanWrap.innerHTML = `<div class="scan-card" style="margin-bottom:20px">
+    <input type="text" value="${url}" style="flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:Inter,sans-serif;font-size:0.95rem;padding:8px 0;" readonly />
+    <button class="scan-btn" onclick="resetUI()" style="background:rgba(255,255,255,0.08);color:var(--muted);box-shadow:none;">✕ Cancel</button>
+  </div>`;
+  document.getElementById('progressSection').before(scanWrap);
+
   eventSource = new EventSource('/api/scan/stream?url=' + encodeURIComponent(url));
+  const steps = ['trust','links','policies','products','images'];
 
   eventSource.onmessage = (e) => {
     const data = JSON.parse(e.data);
-
     if (data.type === 'progress') {
       setStepDone(data.step);
-      // Set next step as running
-      const steps = ['trust', 'links', 'policies', 'products', 'images'];
       const idx = steps.indexOf(data.step);
       if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
     }
-
-    if (data.type === 'complete') {
-      eventSource.close();
-      showResults(data.report);
-    }
-
-    if (data.type === 'error') {
-      eventSource.close();
-      showError(data.message || 'Scan failed');
-    }
+    if (data.type === 'complete') { eventSource.close(); showResults(data.report, url); }
+    if (data.type === 'error') { eventSource.close(); showError(data.message || 'Scan failed'); }
   };
-
-  eventSource.onerror = () => {
-    eventSource.close();
-    showError('Connection lost. Please try again.');
-  };
+  eventSource.onerror = () => { eventSource.close(); showError('Connection lost. Please try again.'); };
 }
 
-function setStepRunning(name) {
-  const el = document.getElementById('step-' + name);
-  if (!el) return;
-  el.className = 'step running';
-  el.innerHTML = '<span class="step-icon spinner">⟳</span> ' + capitalize(name);
-}
-
-function setStepDone(name) {
-  const el = document.getElementById('step-' + name);
-  if (!el) return;
-  el.className = 'step done';
-  el.innerHTML = '<span class="step-icon">✓</span> ' + capitalize(name);
-}
-
-function setStepError(name) {
-  const el = document.getElementById('step-' + name);
-  if (!el) return;
-  el.className = 'step error';
-  el.innerHTML = '<span class="step-icon">✗</span> ' + capitalize(name);
-}
-
-function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+function setStepRunning(n) { const e = document.getElementById('step-'+n); if(e){ e.className='step running'; e.innerHTML='<span class="spinner">⟳</span> '+cap(n); }}
+function setStepDone(n) { const e = document.getElementById('step-'+n); if(e){ e.className='step done'; e.innerHTML='<span>✓</span> '+cap(n); }}
 
 function showError(msg) {
   document.getElementById('progressSection').classList.remove('visible');
-  const banner = document.getElementById('errorBanner');
-  banner.textContent = '⚠ ' + msg;
-  banner.classList.add('visible');
+  const b = document.getElementById('errorBanner');
+  b.textContent = '⚠ ' + msg; b.classList.add('visible');
   document.getElementById('scanBtn').disabled = false;
 }
 
-function showResults(report) {
+function showResults(report, url) {
   document.getElementById('progressSection').classList.remove('visible');
   document.getElementById('resultsSection').classList.add('visible');
   document.getElementById('scanBtn').disabled = false;
 
   const score = report.score || {};
   const allChecks = report.all_checks || [];
-
-  // Score banner
   const pct = score.score_pct || 0;
-  const cls = pct >= 80 ? 'excellent' : pct >= 60 ? 'good' : 'poor';
+  const cls = pct >= 80 ? 'high' : pct >= 60 ? 'mid' : 'low';
+  const grade = pct >= 80 ? '✅ GMC Ready' : pct >= 60 ? '⚠️ Needs Work' : '🚫 High Risk';
+
   document.getElementById('scoreBanner').innerHTML = `
-    <div class="score-banner ${cls}">
+    <div class="score-card">
       <div>
-        <div class="score-number ${cls}">${pct}%</div>
-        <div class="score-label">${score.passed || 0} of ${score.total || 0} checks passed</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:4px;letter-spacing:0.5px;">${url.replace('https://','').replace('http://','').split('/')[0]}</div>
+        <div class="score-pct ${cls}">${pct}%</div>
+        <div class="score-sub">${grade} · ${score.passed||0} of ${score.total||0} checks passed</div>
       </div>
-      <div class="score-stats">
-        <div class="score-stat"><div class="val pass-val">${score.passed || 0}</div><div class="lbl">PASS</div></div>
-        <div class="score-stat"><div class="val warn-val">${score.warnings || 0}</div><div class="lbl">WARN</div></div>
-        <div class="score-stat"><div class="val fail-val">${score.failed || 0}</div><div class="lbl">FAIL</div></div>
+      <div class="score-pills">
+        <span class="pill pill-pass">✓ ${score.passed||0} Pass</span>
+        <span class="pill pill-warn">⚠ ${score.warnings||0} Warn</span>
+        <span class="pill pill-fail">✗ ${score.failed||0} Fail</span>
       </div>
     </div>`;
 
-  // Store intelligence
-  const trust = report.trust || {};
-  const whois = trust.whois || {};
-  const sa = trust.scamadviser || {};
-  const tp = trust.trustpilot || {};
+  const trust = report.trust||{}, whois = trust.whois||{}, sa = trust.scamadviser||{}, tp = trust.trustpilot||{};
   document.getElementById('intelPanel').innerHTML = `
-    <div class="intel-panel">
-      <div class="intel-item"><div class="intel-label">Domain Age</div><div class="intel-value">${whois.domain_age_days != null ? whois.domain_age_days + ' days' : 'Unknown'}</div></div>
-      <div class="intel-item"><div class="intel-label">Registrar</div><div class="intel-value">${whois.registrar || 'Unknown'}</div></div>
-      <div class="intel-item"><div class="intel-label">ScamAdviser</div><div class="intel-value">${sa.score != null ? sa.score + '/100' : 'N/A'}</div></div>
-      <div class="intel-item"><div class="intel-label">Trustpilot</div><div class="intel-value">${tp.score != null ? tp.score + '/5' : 'Not found'}</div></div>
-      <div class="intel-item"><div class="intel-label">Reviews</div><div class="intel-value">${tp.review_count != null ? tp.review_count : '—'}</div></div>
+    <div class="intel-card">
+      <div><div class="intel-lbl">Domain Age</div><div class="intel-val">${whois.domain_age_days!=null?whois.domain_age_days+' days':'Unknown'}</div></div>
+      <div><div class="intel-lbl">Registrar</div><div class="intel-val">${whois.registrar||'Unknown'}</div></div>
+      <div><div class="intel-lbl">ScamAdviser</div><div class="intel-val">${sa.score!=null?sa.score+'/100':'N/A'}</div></div>
+      <div><div class="intel-lbl">Trustpilot</div><div class="intel-val">${tp.score!=null?tp.score+'/5':'Not found'}</div></div>
+      <div><div class="intel-lbl">Reviews</div><div class="intel-val">${tp.review_count!=null?tp.review_count:'—'}</div></div>
     </div>`;
 
-  // Checks by category
-  const categories = {};
-  for (const check of allChecks) {
-    const cat = check.category || 'Other';
-    if (!categories[cat]) categories[cat] = [];
-    categories[cat].push(check);
-  }
-  let checksHtml = '';
-  for (const [cat, checks] of Object.entries(categories)) {
-    checksHtml += `<div class="category"><div class="category-title">${cat}</div>`;
+  const cats = {};
+  for (const c of allChecks) { const k = c.category||'Other'; if(!cats[k]) cats[k]=[]; cats[k].push(c); }
+  let html = '';
+  for (const [cat, checks] of Object.entries(cats)) {
+    html += `<div class="checks-card"><div class="cat-header">${cat}</div>`;
     for (const c of checks) {
-      checksHtml += `
-        <div class="check-row">
-          <span class="badge badge-${c.status}">${c.status}</span>
-          <div class="check-info">
-            <div class="check-name">${c.name}</div>
-            ${c.explanation ? `<div class="check-explanation">${c.explanation}</div>` : ''}
-          </div>
-        </div>`;
+      html += `<div class="check-row"><span class="badge badge-${c.status}">${c.status}</span><div><div class="check-name">${c.name}</div>${c.explanation?`<div class="check-desc">${c.explanation}</div>`:''}</div></div>`;
     }
-    checksHtml += '</div>';
+    html += '</div>';
   }
-  document.getElementById('checksContainer').innerHTML = checksHtml;
+  document.getElementById('checksContainer').innerHTML = html;
 
-  // Fix suggestions
-  const issues = allChecks.filter(c => c.status === 'FAIL' || c.status === 'WARNING');
+  const issues = allChecks.filter(c => c.status==='FAIL'||c.status==='WARNING');
   if (issues.length > 0) {
-    let fixHtml = '<div class="fixes-section"><div class="fixes-title">⚠ Issues to fix</div>';
-    issues.forEach((c, i) => {
-      fixHtml += `<div class="fix-item"><div class="fix-num">${i + 1}.</div><div class="fix-text"><span class="fix-name">[${c.status}] ${c.name}</span>${c.explanation ? ' — ' + c.explanation : ''}</div></div>`;
-    });
-    fixHtml += '</div>';
-    document.getElementById('fixesSection').innerHTML = fixHtml;
+    let fix = `<div class="fixes-card"><div class="fixes-title">⚠ ${issues.length} issue${issues.length>1?'s':''} to fix</div>`;
+    issues.forEach((c,i) => { fix += `<div class="fix-row"><div class="fix-n">${i+1}.</div><div class="fix-body"><span class="fix-name-bold">[${c.status}] ${c.name}</span>${c.explanation?' — '+c.explanation:''}</div></div>`; });
+    fix += '</div>';
+    document.getElementById('fixesSection').innerHTML = fix;
   }
 }
 
 function resetResults() {
   document.getElementById('resultsSection').classList.remove('visible');
-  document.getElementById('scoreBanner').innerHTML = '';
-  document.getElementById('intelPanel').innerHTML = '';
-  document.getElementById('checksContainer').innerHTML = '';
-  document.getElementById('fixesSection').innerHTML = '';
-  ['trust','links','policies','products','images'].forEach(s => {
-    const el = document.getElementById('step-' + s);
-    if (el) { el.className = 'step'; el.innerHTML = '<span class="step-icon">⏳</span> ' + capitalize(s); }
+  ['scoreBanner','intelPanel','checksContainer','fixesSection'].forEach(id => { document.getElementById(id).innerHTML=''; });
+  ['trust','links','policies','products','images'].forEach(n => {
+    const e = document.getElementById('step-'+n);
+    if(e){ e.className='step'; e.innerHTML='<span>⏳</span> '+cap(n); }
   });
 }
 
 function resetUI() {
   if (eventSource) { eventSource.close(); eventSource = null; }
   resetResults();
+  const topScan = document.getElementById('topScan');
+  if (topScan) topScan.remove();
   document.getElementById('progressSection').classList.remove('visible');
   document.getElementById('errorBanner').classList.remove('visible');
+  document.getElementById('heroSection').style.display = 'block';
   document.getElementById('scanBtn').disabled = false;
   document.getElementById('urlInput').value = '';
 }
 
-document.getElementById('urlInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') startScan();
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') startScan(); });
 });
 </script>
 </body>
