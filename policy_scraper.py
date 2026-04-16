@@ -47,44 +47,98 @@ CONTACT_PATHS = [
 
 # ── Shipping velden ──────────────────────────────────────────────────────
 
-SHIPPING_CRITICAL = {
-    "delivery_time": [
-        # English
-        r"\d+[-–]\d+\s+(business\s+)?days?",
-        r"\d+\s+(business\s+)?days?",
-        r"(standard|express|expedited)\s+(shipping|delivery)",
-        r"(delivery|shipping)\s+(time|timeframe|estimate|window)",
-        r"arrives?\s+(in|within)\s+\d+",
-        r"(within|in)\s+\d+[-–\s]\d+\s+(business\s+)?days?",
-        # German
-        r"\d+[-–]\d+\s+(werktag|werkdag|arbeitstag)",
-        r"\d+\s+(werktag|werkdag|arbeitstag)",
-        r"lieferzeit", r"lieferdauer", r"liefert\s+in",
-        r"versanddauer", r"zustellung\s+(innerhalb|in)\s+\d+",
-        r"lieferung\s+(innerhalb|in|erfolgt)",
-        # Dutch
-        r"levertijd", r"levert\s+binnen", r"verzendtijd",
-        r"\d+[-–]\d+\s+werkdag", r"binnen\s+\d+\s+werkdag",
-        # French
-        r"délai\s+de\s+livraison", r"livraison\s+en\s+\d+",
-        r"jours?\s+ouvrables?", r"jours?\s+ouvré",
-    ],
-    "shipping_cost": [
-        # English
-        r"free\s+shipping", r"free\s+deliver",
-        r"shipping\s+(cost|fee|price|rate|is\s+free)",
-        r"\$[\d.]+\s*(shipping|delivery)", r"flat\s+rate",
-        r"calculated\s+at\s+checkout", r"free\s+over\s+\$",
-        r"no\s+shipping\s+(cost|fee|charge)",
-        # German
-        r"versandkost", r"versandfrei", r"kostenlos(er)?\s+versand",
-        r"gratis\s+versand", r"versandkosten\s+(ab|frei|kostenlos|betragen)",
-        r"porto", r"€[\d,.]+\s*versand",
-        # Dutch
-        r"verzendkost", r"gratis\s+verzend", r"verzending\s+(gratis|vrij|kosten)",
-        # French
-        r"frais\s+de\s+port", r"livraison\s+gratuite", r"port\s+offert",
-    ],
+SHIPPING_CRITICAL_BY_LANG = {
+    "en": {
+        "delivery_time": [
+            r"\d+[-–]\d+\s+(business\s+)?days?",
+            r"\d+\s+(business\s+)?days?",
+            r"(standard|express|expedited)\s+(shipping|delivery)",
+            r"(delivery|shipping)\s+(time|timeframe|estimate|window)",
+            r"arrives?\s+(in|within)\s+\d+",
+            r"(within|in)\s+\d+[-–\s]\d+\s+(business\s+)?days?",
+        ],
+        "shipping_cost": [
+            r"free\s+shipping",
+            r"free\s+deliver",
+            r"shipping\s+(cost|fee|price|rate|is\s+free)",
+            r"\$[\d.]+\s*(shipping|delivery)",
+            r"flat\s+rate",
+            r"calculated\s+at\s+checkout",
+            r"free\s+over\s+\$",
+            r"no\s+shipping\s+(cost|fee|charge)",
+        ],
+    },
+    "de": {
+        "delivery_time": [
+            r"\d+[-–]\d+\s+werktag",
+            r"\d+\s+werktag",
+            r"lieferzeit",
+            r"lieferdauer",
+            r"liefert\s+in",
+            r"versanddauer",
+            r"zustellung\s+(innerhalb|in)\s+\d+",
+            r"lieferung\s+(innerhalb|in|erfolgt)",
+            r"\d+[-–]\d+\s+arbeitstag",
+        ],
+        "shipping_cost": [
+            r"versandkost",
+            r"versandfrei",
+            r"kostenlos(er)?\s+versand",
+            r"gratis\s+versand",
+            r"versandkosten\s+(ab|frei|kostenlos|betragen)",
+            r"porto",
+            r"€[\d,.]+\s*versand",
+            r"versandkosten\s+werden",
+        ],
+    },
+    "nl": {
+        "delivery_time": [
+            r"levertijd",
+            r"levert\s+binnen",
+            r"verzendtijd",
+            r"\d+[-–]\d+\s+werkdag",
+            r"binnen\s+\d+\s+werkdag",
+            r"\d+\s+werkdag",
+        ],
+        "shipping_cost": [
+            r"verzendkost",
+            r"gratis\s+verzend",
+            r"verzending\s+(gratis|vrij|kosten)",
+            r"portokost",
+            r"verzendkosten",
+        ],
+    },
+    "fr": {
+        "delivery_time": [
+            r"délai\s+de\s+livraison",
+            r"livraison\s+en\s+\d+",
+            r"jours?\s+ouvrables?",
+            r"jours?\s+ouvré",
+            r"délai\s+d.expédition",
+        ],
+        "shipping_cost": [
+            r"frais\s+de\s+port",
+            r"livraison\s+gratuite",
+            r"port\s+offert",
+            r"frais\s+de\s+livraison",
+            r"expédition\s+gratuite",
+        ],
+    },
+    "es": {
+        "delivery_time": [
+            r"tiempo\s+de\s+entrega",
+            r"plazo\s+de\s+entrega",
+            r"días?\s+hábiles?",
+            r"días?\s+laborables?",
+            r"envío\s+en\s+\d+",
+        ],
+        "shipping_cost": [
+            r"gastos?\s+de\s+envío",
+            r"envío\s+gratuito",
+            r"envío\s+gratis",
+            r"costes?\s+de\s+envío",
+        ],
+    },
 }
 
 SHIPPING_RECOMMENDED = {
@@ -106,43 +160,84 @@ SHIPPING_RECOMMENDED = {
 
 # ── Refund velden ────────────────────────────────────────────────────────
 
-REFUND_CRITICAL = {
-    "return_window": [
-        # English
-        r"\d+[\s-]day\s+return",
-        r"return(s)?\s+within\s+\d+",
-        r"within\s+\d+\s+days?\s+of\s+(purchase|delivery|receipt)",
-        r"\d+\s+days?\s+to\s+return",
-        r"(30|60|90|14|7)\s+day(s)?\s+(return|refund|money)",
-        r"hassle[\s-]free\s+return",
-        # German
-        r"\d+\s+(tage|tagen)\s+(rückgabe|rücksendung|widerruf|rückgaberecht)",
-        r"rückgabefrist", r"widerrufsfrist", r"rückgaberecht",
-        r"innerhalb\s+von\s+\d+\s+tagen",
-        r"\d+[\s-]tägig(es?)?\s+(rückgabe|widerruf)",
-        # Dutch
-        r"\d+\s+dag(en)?\s+(retour|terugsturen|retourneren)",
-        r"retourperiode", r"retourneren\s+binnen\s+\d+",
-        # French
-        r"\d+\s+jours?\s+(pour\s+)?(retourner|renvoyer|retour)",
-        r"droit\s+de\s+rétractation", r"délai\s+de\s+retour",
-    ],
-    "return_shipping_cost": [
-        # English
-        r"(customer|buyer|you)\s+(pay|is\s+responsible|covers?)\s+(for\s+)?return",
-        r"free\s+return(s)?",
-        r"return\s+shipping\s+(is\s+)?(free|covered|paid|at\s+your\s+cost)",
-        r"prepaid\s+return(s)?\s+label",
-        r"return\s+(postage|label|cost|fee)",
-        r"we\s+(cover|pay\s+for)\s+return",
-        # German
-        r"rücksendekosten", r"rückversand\s+(kostenlos|gratis|kostenfrei|auf\s+kosten)",
-        r"kostenlose\s+(rücksendung|rückgabe|retoure)",
-        r"rücksendung\s+(ist\s+)?(kostenlos|kostenfrei|gratis)",
-        r"porto\s+(wird\s+)?(erstattet|übernommen|kostenlos)",
-        # Dutch
-        r"retourkosten", r"gratis\s+retour", r"retourverzending\s+(gratis|kosteloos)",
-    ],
+REFUND_CRITICAL_BY_LANG = {
+    "en": {
+        "return_window": [
+            r"\d+[\s-]day\s+return",
+            r"return(s)?\s+within\s+\d+",
+            r"within\s+\d+\s+days?\s+of\s+(purchase|delivery|receipt)",
+            r"\d+\s+days?\s+to\s+return",
+            r"(30|60|90|14|7)\s+day(s)?\s+(return|refund|money)",
+            r"hassle[\s-]free\s+return",
+        ],
+        "return_shipping_cost": [
+            r"(customer|buyer|you)\s+(pay|is\s+responsible|covers?)\s+(for\s+)?return",
+            r"free\s+return(s)?",
+            r"return\s+shipping\s+(is\s+)?(free|covered|paid|at\s+your\s+cost)",
+            r"prepaid\s+return(s)?\s+label",
+            r"return\s+(postage|label|cost|fee)",
+            r"we\s+(cover|pay\s+for)\s+return",
+        ],
+    },
+    "de": {
+        "return_window": [
+            r"\d+\s+(tage|tagen)\s+(rückgabe|rücksendung|widerruf|rückgaberecht)",
+            r"rückgabefrist",
+            r"widerrufsfrist",
+            r"rückgaberecht",
+            r"innerhalb\s+von\s+\d+\s+tagen",
+            r"\d+[\s-]tägig(es?)?\s+(rückgabe|widerruf)",
+            r"\d+\s+tage\s+rückgabe",
+        ],
+        "return_shipping_cost": [
+            r"rücksendekosten",
+            r"rückversand\s+(kostenlos|gratis|kostenfrei|auf\s+kosten)",
+            r"kostenlose\s+(rücksendung|rückgabe|retoure)",
+            r"rücksendung\s+(ist\s+)?(kostenlos|kostenfrei|gratis)",
+            r"porto\s+(wird\s+)?(erstattet|übernommen|kostenlos)",
+            r"rückgabe\s+kostenlos",
+        ],
+    },
+    "nl": {
+        "return_window": [
+            r"\d+\s+dag(en)?\s+(retour|terugsturen|retourneren)",
+            r"retourperiode",
+            r"retourneren\s+binnen\s+\d+",
+            r"\d+\s+dag(en)?\s+bedenktijd",
+        ],
+        "return_shipping_cost": [
+            r"retourkosten",
+            r"gratis\s+retour",
+            r"retourverzending\s+(gratis|kosteloos)",
+            r"kosten\s+voor\s+retour",
+        ],
+    },
+    "fr": {
+        "return_window": [
+            r"\d+\s+jours?\s+(pour\s+)?(retourner|renvoyer|retour)",
+            r"droit\s+de\s+rétractation",
+            r"délai\s+de\s+retour",
+            r"\d+\s+jours?\s+pour\s+changer",
+        ],
+        "return_shipping_cost": [
+            r"frais\s+de\s+retour",
+            r"retour\s+gratuit",
+            r"retour\s+offert",
+            r"remboursement\s+des\s+frais",
+        ],
+    },
+    "es": {
+        "return_window": [
+            r"\d+\s+días?\s+(para\s+)?(devolución|devolver|retorno)",
+            r"plazo\s+de\s+devolución",
+            r"política\s+de\s+devolución",
+        ],
+        "return_shipping_cost": [
+            r"gastos?\s+de\s+devolución",
+            r"devolución\s+gratuita",
+            r"devolución\s+gratis",
+        ],
+    },
 }
 
 REFUND_RECOMMENDED = {
@@ -188,6 +283,29 @@ FIELD_LABELS = {
     "exchange_policy": "Omruilbeleid",
     "restocking_fee": "Restocking fee",
 }
+
+
+def detect_language(html: str) -> str:
+    """Detect page language from HTML lang attribute or meta tags. Returns 2-letter code."""
+    soup = BeautifulSoup(html, "html.parser")
+    html_tag = soup.find("html")
+    if html_tag and html_tag.get("lang"):
+        return html_tag["lang"].lower().split("-")[0].split("_")[0][:2]
+    meta = soup.find("meta", attrs={"http-equiv": re.compile("content-language", re.I)})
+    if meta and meta.get("content"):
+        return meta["content"].lower().split("-")[0][:2]
+    meta2 = soup.find("meta", attrs={"name": re.compile("^language$", re.I)})
+    if meta2 and meta2.get("content"):
+        return meta2["content"].lower().split("-")[0][:2]
+    return "en"
+
+
+def get_shipping_critical(lang: str) -> dict:
+    return SHIPPING_CRITICAL_BY_LANG.get(lang, SHIPPING_CRITICAL_BY_LANG["en"])
+
+
+def get_refund_critical(lang: str) -> dict:
+    return REFUND_CRITICAL_BY_LANG.get(lang, REFUND_CRITICAL_BY_LANG["en"])
 
 
 # ---------------------------------------------------------------------------
@@ -329,15 +447,18 @@ async def check_shipping_policy(client, base_url, api_key=None) -> dict:
     html, url = await fetch_first_available(client, base_url, SHIPPING_PATHS, api_key, nav_category="shipping")
 
     if not html:
+        default_critical = list(get_shipping_critical("en").keys())
         return {
             "status": "FAIL", "url": None,
             "explanation": "Shipping policy page not found at expected URLs.",
-            "critical_missing": list(SHIPPING_CRITICAL.keys()),
+            "critical_missing": default_critical,
             "recommended_missing": list(SHIPPING_RECOMMENDED.keys()),
         }
 
     text = BeautifulSoup(html, "html.parser").get_text()
-    critical_found = check_fields(text, SHIPPING_CRITICAL)
+    lang = detect_language(html)
+    critical_patterns = get_shipping_critical(lang)
+    critical_found = check_fields(text, critical_patterns)
     recommended_found = check_fields(text, SHIPPING_RECOMMENDED)
 
     critical_missing = [f for f, v in critical_found.items() if not v]
@@ -397,15 +518,18 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
     html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key, nav_category="refund")
 
     if not html:
+        default_critical = list(get_refund_critical("en").keys())
         return {
             "status": "FAIL", "url": None,
             "explanation": "Refund/return policy page not found.",
-            "critical_missing": list(REFUND_CRITICAL.keys()),
+            "critical_missing": default_critical,
             "recommended_missing": list(REFUND_RECOMMENDED.keys()),
         }
 
     text = BeautifulSoup(html, "html.parser").get_text()
-    critical_found = check_fields(text, REFUND_CRITICAL)
+    lang = detect_language(html)
+    critical_patterns = get_refund_critical(lang)
+    critical_found = check_fields(text, critical_patterns)
     recommended_found = check_fields(text, REFUND_RECOMMENDED)
 
     critical_missing = [f for f, v in critical_found.items() if not v]
