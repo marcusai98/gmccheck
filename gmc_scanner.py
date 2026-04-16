@@ -84,19 +84,28 @@ def extract_all_checks(results: dict) -> list[dict]:
 
     # Policy checks
     policy = results.get("policies", {}).get("checks", {})
-    checks.append({"name": "Shipping policy volledigheid", "category": "Policies",
+    checks.append({"name": "Shipping policy completeness", "category": "Policies",
                    **policy.get("shipping_policy", {"status": "ERROR", "explanation": ""})})
+    dup = policy.get("duplicate_shipping", {"status": "ERROR", "explanation": ""})
+    dup_items = [{"url": d.get("url_1",""), "similarity": d.get("similarity",0)} for d in dup.get("duplicates", [])]
+    dup_items += [{"url": d.get("url_2",""), "similarity": d.get("similarity",0)} for d in dup.get("duplicates", []) if d.get("url_2") != d.get("url_1")]
+    # Deduplicate URLs
+    seen = set(); dup_items_uniq = []
+    for d in dup_items:
+        if d["url"] not in seen: seen.add(d["url"]); dup_items_uniq.append(d)
     checks.append({"name": "Duplicate shipping policy", "category": "Policies",
-                   **policy.get("duplicate_shipping", {"status": "ERROR", "explanation": ""})})
-    checks.append({"name": "Refund policy volledigheid", "category": "Policies",
+                   "status": dup.get("status","ERROR"),
+                   "explanation": dup.get("explanation",""),
+                   "items": [{"url": d["url"], "status_code": f"{d['similarity']}% match"} for d in dup_items_uniq]})
+    checks.append({"name": "Refund policy completeness", "category": "Policies",
                    **policy.get("refund_policy", {"status": "ERROR", "explanation": ""})})
-    checks.append({"name": "Klantenservice uren", "category": "Policies",
+    checks.append({"name": "Customer service hours", "category": "Policies",
                    **policy.get("customer_service_hours", {"status": "ERROR", "explanation": ""})})
 
     # Product checks
     product = results.get("products", {}).get("checks", {})
     empty = product.get("empty_collections", {})
-    checks.append({"name": "Lege collecties", "category": "Products",
+    checks.append({"name": "Empty collections", "category": "Products",
                    "status": empty.get("status", "ERROR"),
                    "explanation": empty.get("explanation", "")})
 
@@ -107,7 +116,7 @@ def extract_all_checks(results: dict) -> list[dict]:
         col_status = "FAIL" if any(c["status"] == "FAIL" for c in col_results) else \
                      "WARNING" if non_pass else "PASS"
         checks.append({
-            "name": "Producten per collectie (5–10)",
+            "name": "Products per collection (5–10)",
             "category": "Products",
             "status": col_status,
             "explanation": (
@@ -118,12 +127,12 @@ def extract_all_checks(results: dict) -> list[dict]:
             "details": non_pass,
         })
     else:
-        checks.append({"name": "Producten per collectie (5–10)", "category": "Products",
+        checks.append({"name": "Products per collection (5–10)", "category": "Products",
                        "status": "WARNING", "explanation": "No collections found."})
 
     # Image check
     images = results.get("images", {})
-    checks.append({"name": "Duplicate productafbeeldingen", "category": "Products",
+    checks.append({"name": "Duplicate product images", "category": "Products",
                    "status": images.get("status", "ERROR"),
                    "explanation": images.get("explanation", "")})
 
