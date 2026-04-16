@@ -742,6 +742,20 @@ function showResults(report, url) {
   document.getElementById('resultsSection').classList.add('visible');
   document.getElementById('scanBtn').disabled = false;
 
+  // Save to this browser's local history (never global)
+  const score = report.score || {};
+  const domain = url.replace('https://','').replace('http://','').split('/')[0];
+  saveToLocalHistory({
+    scan_id: report.scan_id,
+    url, domain,
+    score_pct: score.score_pct || 0,
+    passed: score.passed || 0,
+    failed: score.failed || 0,
+    warnings: score.warnings || 0,
+    scanned_at: new Date().toISOString(),
+  });
+  loadHistory();
+
   const score = report.score || {};
   const allChecks = report.all_checks || [];
   const pct = score.score_pct || 0;
@@ -843,33 +857,39 @@ function resetUI() {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('urlInput').addEventListener('keydown', e => { if(e.key==='Enter') startScan(); });
 
-  async function loadHistory() {
+  // History is 100% client-side — only this browser's scans, nothing global
+  function getLocalHistory() {
+    try { return JSON.parse(localStorage.getItem('gmc_scan_history') || '[]'); }
+    catch(e) { return []; }
+  }
+
+  function saveToLocalHistory(scan) {
     try {
-      const res = await fetch('/api/history?limit=10');
-      const { scans } = await res.json();
-      const el = document.getElementById('historyList');
-      if (!scans || scans.length === 0) {
-        document.getElementById('historySection').style.display = 'none';
-        return;
-      }
-      el.innerHTML = scans.map(s => {
-        const pct = s.score_pct ?? 0;
-        const color = pct >= 80 ? '#00C96B' : pct >= 60 ? '#FFB800' : '#FF453A';
-        const date = new Date(s.scanned_at).toLocaleDateString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
-        return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background 0.2s;" onclick="document.getElementById('urlInput').value='${s.url}';startScan();" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--glass)'">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:${color};">${Math.round(pct)}%</div>
-            <div>
-              <div style="font-size:0.86rem;font-weight:500;">${s.domain}</div>
-              <div style="font-size:0.72rem;color:var(--muted);">${date} · ${s.passed} passed · ${s.failed} failed</div>
-            </div>
+      const h = getLocalHistory();
+      h.unshift(scan); // newest first
+      localStorage.setItem('gmc_scan_history', JSON.stringify(h.slice(0, 20)));
+    } catch(e) {}
+  }
+
+  async function loadHistory() {
+    const history = getLocalHistory();
+    const el = document.getElementById('historyList');
+    if (!history.length) { document.getElementById('historySection').style.display = 'none'; return; }
+    el.innerHTML = history.map(s => {
+      const pct = s.score_pct ?? 0;
+      const color = pct >= 80 ? '#00C96B' : pct >= 60 ? '#FFB800' : '#FF453A';
+      const date = new Date(s.scanned_at).toLocaleDateString('en-GB', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+      return `<div style="background:var(--glass);border:1px solid var(--glass-border);border-radius:12px;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background 0.2s;" onclick="document.getElementById('urlInput').value='${s.url}';window.scrollTo(0,0);startScan();" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='var(--glass)'">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:${color};">${Math.round(pct)}%</div>
+          <div>
+            <div style="font-size:0.86rem;font-weight:500;">${s.domain}</div>
+            <div style="font-size:0.72rem;color:var(--muted);">${date} · ${s.passed} passed · ${s.failed} failed</div>
           </div>
-          <div style="font-size:0.72rem;color:var(--muted);opacity:0.5;">↻ Rescan</div>
-        </div>`;
-      }).join('');
-    } catch(e) {
-      document.getElementById('historySection').style.display = 'none';
-    }
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);opacity:0.5;">↻ Rescan</div>
+      </div>`;
+    }).join('');
   }
 
   loadHistory();;
