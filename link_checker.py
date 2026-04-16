@@ -371,9 +371,7 @@ async def run_link_check(store_url: str) -> dict:
         # Only check meaningful links — skip product/blog/account/search pages
         # (product pages are always populated; we care about nav, policies, collections)
         SKIP_PATTERNS = (
-            "/products/", "/blogs/", "/articles/",
-            "/account", "/cart", "/checkout", "/search",
-            "/orders/", "/collections/all?", "?sort_by=", "?page=",
+            "/products/",
             "cdn.shopify.com", ".jpg", ".png", ".gif", ".webp", ".svg", ".css", ".js",
         )
         meaningful_links = [
