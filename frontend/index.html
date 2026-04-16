@@ -256,7 +256,7 @@ nav {
 .progress-fill {
   height: 100%; width: 0%; border-radius: 99px;
   background: linear-gradient(90deg, #00C96B, #00ff88);
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.12s linear;
   box-shadow: 0 0 8px rgba(0,201,107,0.5);
 }
 .steps { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -508,7 +508,8 @@ function startScan() {
   document.getElementById('errorBanner').classList.remove('visible');
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('progressPct').textContent = '0%';
-  completedSteps = 0;
+  completedSteps = 0; currentPct = 0; targetPct = 2;
+  startProgressAnimation();
   setStepRunning('trust');
 
   // Re-show scan input at top
@@ -524,10 +525,36 @@ function startScan() {
   eventSource = new EventSource('/api/scan/stream?url=' + encodeURIComponent(url));
   const steps = ['trust','links','policies','products','images'];
   let completedSteps = 0;
+  let currentPct = 0;
+  let targetPct = 0;
+  let progressInterval = null;
 
-  function updateProgress(pct) {
-    document.getElementById('progressFill').style.width = pct + '%';
-    document.getElementById('progressPct').textContent = pct + '%';
+  function startProgressAnimation() {
+    // Smoothly ease currentPct toward targetPct every 80ms
+    progressInterval = setInterval(() => {
+      if (currentPct < targetPct) {
+        // Ease toward target: faster when far, slower when close
+        const delta = Math.max(0.15, (targetPct - currentPct) * 0.04);
+        currentPct = Math.min(targetPct, currentPct + delta);
+        const display = Math.floor(currentPct);
+        document.getElementById('progressFill').style.width = currentPct + '%';
+        document.getElementById('progressPct').textContent = display + '%';
+      }
+    }, 80);
+    // Slowly creep toward 88% even without step events (simulates activity)
+    setInterval(() => {
+      if (targetPct < 88) targetPct = Math.min(88, targetPct + 0.5);
+    }, 600);
+  }
+
+  function setProgressTarget(pct) { targetPct = Math.max(targetPct, pct); }
+
+  function finishProgress(cb) {
+    targetPct = 100;
+    // Wait for animation to reach 100% then call callback
+    const check = setInterval(() => {
+      if (currentPct >= 99) { clearInterval(check); if (cb) cb(); }
+    }, 100);
   }
 
   eventSource.onmessage = (e) => {
@@ -535,11 +562,12 @@ function startScan() {
     if (data.type === 'progress') {
       setStepDone(data.step);
       completedSteps++;
-      updateProgress(Math.round((completedSteps / steps.length) * 100));
+      // Each step nudges target forward (but smooth animation handles the fill)
+      setProgressTarget(Math.round((completedSteps / steps.length) * 95));
       const idx = steps.indexOf(data.step);
       if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
     }
-    if (data.type === 'complete') { eventSource.close(); showResults(data.report, url); }
+    if (data.type === 'complete') { eventSource.close(); finishProgress(() => showResults(data.report, url)); }
     if (data.type === 'error') { eventSource.close(); showError(data.message || 'Scan failed'); }
   };
   eventSource.onerror = () => { eventSource.close(); showError('Connection lost. Please try again.'); };
