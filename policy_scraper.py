@@ -673,6 +673,16 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
     timeout_result = {"status": "WARNING", "explanation": "Policy check timed out.", "duplicates": []}
 
     async with httpx.AsyncClient(headers={"User-Agent": HUMAN_UA}, follow_redirects=True) as client:
+        # Pre-fetch nav pages ONCE — prevents 13 concurrent homepage fetches (race condition)
+        try:
+            nav_pages = await asyncio.wait_for(
+                discover_nav_pages(client, base_url, api_key), timeout=15
+            )
+        except Exception:
+            nav_pages = {}
+        # Populate cache so all checks reuse it
+        _nav_cache[base_url] = nav_pages
+
         try:
             (shipping, duplicate, refund, hours, privacy, tos, about, contact, faq,
              contact_completeness, refund_footer, refund_quality, payment_methods) = await asyncio.wait_for(
@@ -696,6 +706,9 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
         except asyncio.TimeoutError:
             shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = \
                 contact_completeness = refund_footer = refund_quality = payment_methods = {**timeout_result}
+        finally:
+            # Clear cache entry after scan to avoid stale data
+            _nav_cache.pop(base_url, None)
 
     statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"],
                 privacy["status"], tos["status"], about["status"], contact["status"], faq["status"],
