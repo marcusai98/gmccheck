@@ -104,19 +104,23 @@ def extract_all_checks(results: dict) -> list[dict]:
                    **trust.get("trustpilot", {"status": "ERROR"})})
 
     # Link checks
-    link = results.get("links", {}).get("checks", {})
+    links_result = results.get("links", {})
+    link = links_result.get("checks", {})
+    link_timed_out = not link and links_result.get("status") == "WARNING"
+    link_timeout_msg = links_result.get("explanation", "Link check did not complete.")
+
     checks.append({"name": "Broken links", "category": "Links",
-                   "status": link.get("broken_links", {}).get("status", "ERROR"),
-                   "explanation": f"{link.get('broken_links', {}).get('count', 0)} broken link(s) found.",
-                   "items": link.get("broken_links", {}).get("items", [])})
+                   "status": "WARNING" if link_timed_out else link.get("broken_links", {}).get("status", "ERROR"),
+                   "explanation": link_timeout_msg if link_timed_out else f"{link.get('broken_links', {}).get('count', 0)} broken link(s) found.",
+                   "items": [] if link_timed_out else link.get("broken_links", {}).get("items", [])})
     checks.append({"name": "Wrong-domain links", "category": "Links",
-                   "status": link.get("wrong_domain_links", {}).get("status", "ERROR"),
-                   "explanation": f"{link.get('wrong_domain_links', {}).get('count', 0)} wrong-domain link(s) found.",
-                   "items": link.get("wrong_domain_links", {}).get("items", [])})
+                   "status": "WARNING" if link_timed_out else link.get("wrong_domain_links", {}).get("status", "ERROR"),
+                   "explanation": link_timeout_msg if link_timed_out else f"{link.get('wrong_domain_links', {}).get('count', 0)} wrong-domain link(s) found.",
+                   "items": [] if link_timed_out else link.get("wrong_domain_links", {}).get("items", [])})
     checks.append({"name": "Email domain mismatch", "category": "Links",
-                   "status": link.get("email_mismatches", {}).get("status", "ERROR"),
-                   "explanation": f"{link.get('email_mismatches', {}).get('count', 0)} email mismatch(es) found.",
-                   "items": link.get("email_mismatches", {}).get("items", [])})
+                   "status": "WARNING" if link_timed_out else link.get("email_mismatches", {}).get("status", "ERROR"),
+                   "explanation": link_timeout_msg if link_timed_out else f"{link.get('email_mismatches', {}).get('count', 0)} email mismatch(es) found.",
+                   "items": [] if link_timed_out else link.get("email_mismatches", {}).get("items", [])})
 
     # Policy checks
     policy = results.get("policies", {}).get("checks", {})
