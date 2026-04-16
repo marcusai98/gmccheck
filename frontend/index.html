@@ -370,6 +370,7 @@ footer {
 }
 footer span { color: var(--accent); }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div class="ambient"></div>
@@ -483,7 +484,19 @@ footer span { color: var(--accent); }
 
   <!-- RESULTS -->
   <div class="results" id="resultsSection">
-    <button class="reset-btn" onclick="resetUI()">← Scan another store</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <button class="reset-btn" style="margin-bottom:0;" onclick="resetUI()">← Scan another store</button>
+      <button id="pdfBtn" onclick="downloadPDF()" style="
+        display:flex;align-items:center;gap:7px;
+        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+        color:rgba(255,255,255,0.7);font-size:0.78rem;font-weight:600;
+        padding:8px 16px;border-radius:10px;cursor:pointer;
+        font-family:Inter,sans-serif;transition:all 0.2s;
+      " onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PDF
+      </button>
+    </div>
     <div id="scoreBanner"></div>
     <div id="intelPanel"></div>
     <div id="checksContainer"></div>
@@ -838,6 +851,39 @@ function resetResults() {
   ['trust','links','policies','products','images'].forEach(n => {
     const e = document.getElementById('step-'+n);
     if(e){ e.className='step'; e.innerHTML='<span>⏳</span> '+cap(n); }
+  });
+}
+
+function downloadPDF() {
+  const btn = document.getElementById('pdfBtn');
+  btn.textContent = 'Generating...';
+  btn.disabled = true;
+
+  const element = document.getElementById('resultsSection');
+  const domain = (window._pendingUrl || 'store').replace('https://','').replace('http://','').split('/')[0];
+  const filename = `GMC-Report-${domain}-${new Date().toISOString().slice(0,10)}.pdf`;
+
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, backgroundColor: '#080C09', useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+
+  // Temporarily hide the buttons row for the PDF
+  const btnRow = element.querySelector('div[style*="justify-content:space-between"]');
+  if (btnRow) btnRow.style.display = 'none';
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    if (btnRow) btnRow.style.display = 'flex';
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF';
+    btn.disabled = false;
+  }).catch(() => {
+    if (btnRow) btnRow.style.display = 'flex';
+    btn.textContent = 'Download PDF';
+    btn.disabled = false;
   });
 }
 
