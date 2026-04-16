@@ -866,23 +866,52 @@ function downloadPDF() {
   const filename = `GMC-Report-${domain}-${new Date().toISOString().slice(0,10)}.pdf`;
 
   const opt = {
-    margin: [10, 10, 10, 10],
+    margin: [12, 12, 12, 12],
     filename,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, backgroundColor: '#080C09', useCORS: true, logging: false },
+    image: { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
   };
 
-  // Temporarily hide the buttons row for the PDF
+  // Inject light-mode styles for PDF capture
+  const style = document.createElement('style');
+  style.id = 'pdf-override';
+  style.textContent = `
+    #resultsSection, #resultsSection * {
+      background: #fff !important;
+      background-color: #fff !important;
+      color: #111 !important;
+      border-color: #ddd !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+    #resultsSection a { color: #1a56db !important; }
+    #resultsSection .badge-PASS { background: #d1fae5 !important; color: #065f46 !important; }
+    #resultsSection .badge-WARNING { background: #fef3c7 !important; color: #92400e !important; }
+    #resultsSection .badge-FAIL { background: #fee2e2 !important; color: #991b1b !important; }
+    #resultsSection .score-pct.high { color: #065f46 !important; }
+    #resultsSection .score-pct.mid { color: #92400e !important; }
+    #resultsSection .score-pct.low { color: #991b1b !important; }
+    #resultsSection .pill-pass { background: #d1fae5 !important; color: #065f46 !important; }
+    #resultsSection .pill-warn { background: #fef3c7 !important; color: #92400e !important; }
+    #resultsSection .pill-fail { background: #fee2e2 !important; color: #991b1b !important; }
+    #resultsSection .check-item { background: #f3f4f6 !important; }
+    #resultsSection .muted, #resultsSection [style*="color:var(--muted)"] { color: #555 !important; }
+  `;
+  document.head.appendChild(style);
+
+  // Temporarily hide the buttons row
   const btnRow = element.querySelector('div[style*="justify-content:space-between"]');
   if (btnRow) btnRow.style.display = 'none';
 
   html2pdf().set(opt).from(element).save().then(() => {
+    document.getElementById('pdf-override')?.remove();
     if (btnRow) btnRow.style.display = 'flex';
     btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PDF';
     btn.disabled = false;
   }).catch(() => {
+    document.getElementById('pdf-override')?.remove();
     if (btnRow) btnRow.style.display = 'flex';
     btn.textContent = 'Download PDF';
     btn.disabled = false;
