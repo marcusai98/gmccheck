@@ -324,6 +324,21 @@ nav {
 .badge-ERROR, .badge-SKIPPED { background: rgba(255,255,255,0.06); color: var(--muted); }
 .check-name { font-size: 0.86rem; font-weight: 500; }
 .check-desc { font-size: 0.78rem; color: var(--muted); margin-top: 2px; line-height: 1.5; }
+.check-items { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.check-item {
+  font-size: 0.73rem; color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px; padding: 4px 10px; font-family: 'SF Mono', 'Fira Code', monospace;
+  word-break: break-all; display: flex; gap: 8px; align-items: flex-start;
+}
+.check-item.fail { color: rgba(255,100,90,0.7); border-color: rgba(255,69,58,0.15); background: rgba(255,69,58,0.04); }
+.check-item.warn { color: rgba(255,159,10,0.7); border-color: rgba(255,159,10,0.12); background: rgba(255,159,10,0.04); }
+.check-item-code { flex-shrink: 0; font-size: 0.68rem; opacity: 0.6; }
+.check-items-toggle {
+  font-size: 0.72rem; color: rgba(255,255,255,0.25); cursor: pointer; margin-top: 6px;
+  display: inline-flex; align-items: center; gap: 4px; user-select: none;
+}
+.check-items-toggle:hover { color: rgba(255,255,255,0.5); }
 
 .fixes-card {
   background: rgba(255,69,58,0.05); border: 1px solid rgba(255,69,58,0.14);
@@ -555,7 +570,34 @@ function showResults(report, url) {
   for (const [cat, checks] of Object.entries(cats)) {
     html += `<div class="checks-card"><div class="cat-header">${cat}</div>`;
     for (const c of checks) {
-      html += `<div class="check-row"><span class="badge badge-${c.status}">${c.status}</span><div><div class="check-name">${c.name}</div>${c.explanation?`<div class="check-desc">${c.explanation}</div>`:''}</div></div>`;
+      const items = c.items || [];
+      const MAX_SHOW = 5;
+      let itemsHtml = '';
+      if (items.length > 0) {
+        const isFail = c.status === 'FAIL';
+        const cls = isFail ? 'fail' : 'warn';
+        const id = `items-${Math.random().toString(36).slice(2)}`;
+        const shown = items.slice(0, MAX_SHOW);
+        const hidden = items.slice(MAX_SHOW);
+        itemsHtml = `<div class="check-items" id="${id}">`;
+        for (const item of shown) {
+          const url = item.url || item.email || item.wrong_domain || JSON.stringify(item);
+          const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
+          itemsHtml += `<div class="check-item ${cls}">${code}<span>${url}</span></div>`;
+        }
+        if (hidden.length > 0) {
+          const moreId = `more-${id}`;
+          itemsHtml += `<div id="${moreId}" style="display:none">`;
+          for (const item of hidden) {
+            const url = item.url || item.email || item.wrong_domain || JSON.stringify(item);
+            const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
+            itemsHtml += `<div class="check-item ${cls}">${code}<span>${url}</span></div>`;
+          }
+          itemsHtml += `</div><span class="check-items-toggle" onclick="document.getElementById('${moreId}').style.display='flex';document.getElementById('${moreId}').style.flexDirection='column';document.getElementById('${moreId}').style.gap='4px';this.style.display='none'">▾ Show ${hidden.length} more</span>`;
+        }
+        itemsHtml += '</div>';
+      }
+      html += `<div class="check-row"><span class="badge badge-${c.status}">${c.status}</span><div><div class="check-name">${c.name}</div>${c.explanation?`<div class="check-desc">${c.explanation}</div>`:''}${itemsHtml}</div></div>`;
     }
     html += '</div>';
   }
