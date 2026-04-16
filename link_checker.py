@@ -368,9 +368,20 @@ async def run_link_check(store_url: str) -> dict:
                     status, _ = await fetch_httpx(client, url)
                 return url, status
 
-        # Cap at 50 links to avoid timeout on large stores
-        MAX_INTERNAL_LINKS = 50
-        internal_sample = list(internal.keys())[:MAX_INTERNAL_LINKS]
+        # Only check meaningful links — skip product/blog/account/search pages
+        # (product pages are always populated; we care about nav, policies, collections)
+        SKIP_PATTERNS = (
+            "/products/", "/blogs/", "/articles/",
+            "/account", "/cart", "/checkout", "/search",
+            "/orders/", "/collections/all?", "?sort_by=", "?page=",
+            "cdn.shopify.com", ".jpg", ".png", ".gif", ".webp", ".svg", ".css", ".js",
+        )
+        meaningful_links = [
+            url for url in internal
+            if not any(pat in url.lower() for pat in SKIP_PATTERNS)
+        ]
+        # Cap at 60 as a safety net
+        internal_sample = meaningful_links[:60]
         link_checks = await asyncio.gather(
             *[check_link(url) for url in internal_sample],
             return_exceptions=True,
