@@ -256,8 +256,8 @@ nav {
 .progress-fill {
   height: 100%; width: 0%; border-radius: 99px;
   background: linear-gradient(90deg, #00C96B, #00ff88);
-  transition: width 0.12s linear;
   box-shadow: 0 0 8px rgba(0,201,107,0.5);
+  will-change: width;
 }
 .steps { display: flex; gap: 8px; flex-wrap: wrap; }
 .step {
@@ -590,6 +590,7 @@ function startScan() {
     }, 600);
   }
 
+  const STEP_TARGETS = { trust: 18, links: 36, policies: 58, products: 76, images: 92 };
   function setProgressTarget(pct) { targetPct = Math.max(targetPct, pct); }
 
   function finishProgress(cb) {
@@ -628,8 +629,7 @@ function startScan() {
     if (data.type === 'progress') {
       setStepDone(data.step);
       completedSteps++;
-      // Each step nudges target forward (but smooth animation handles the fill)
-      setProgressTarget(Math.round((completedSteps / steps.length) * 95));
+      setProgressTarget(STEP_TARGETS[data.step] || Math.round((completedSteps / steps.length) * 92));
       const idx = steps.indexOf(data.step);
       if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
     }
