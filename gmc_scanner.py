@@ -26,6 +26,25 @@ from image_checker import run_image_checks
 # Score calculator
 # ---------------------------------------------------------------------------
 
+# Weight per check — higher = more impact on score
+# Critical GMC requirements get weight 3, important get 2, advisory get 1
+CHECK_WEIGHTS = {
+    "Domain age":                   3,   # GMC suspends young domains
+    "ScamAdviser score":            2,
+    "Trustpilot score":             1,   # Advisory — not all stores have it
+    "Broken links":                 3,   # GMC crawls pages; 404s = suspension risk
+    "Wrong-domain links":           1,   # Advisory
+    "Email domain mismatch":        1,   # Advisory
+    "Shipping policy completeness": 3,   # GMC required
+    "Duplicate shipping policy":    2,
+    "Refund policy completeness":   3,   # GMC required
+    "Customer service hours":       2,
+    "Empty collections":            2,
+    "Products per collection (5–10)": 1, # Advisory
+    "Duplicate product images":     2,
+}
+DEFAULT_WEIGHT = 1
+
 def calculate_score(all_checks: list[dict]) -> dict:
     """Calculate overall compliance score from all check results."""
     total = len(all_checks)
@@ -35,9 +54,17 @@ def calculate_score(all_checks: list[dict]) -> dict:
     errors = sum(1 for c in all_checks if c["status"] == "ERROR")
     skipped = sum(1 for c in all_checks if c["status"] == "SKIPPED")
 
-    # Score only counts non-skipped checks
-    scoreable = total - skipped
-    score_pct = round((passed / scoreable * 100) if scoreable > 0 else 0, 1)
+    # Weighted score — critical checks count more than advisory ones
+    # WARNING counts as 0.4 of a pass (partial credit)
+    weighted_score = 0.0
+    weighted_total = 0.0
+    for c in all_checks:
+        if c["status"] == "SKIPPED": continue
+        w = CHECK_WEIGHTS.get(c["name"], DEFAULT_WEIGHT)
+        weighted_total += w
+        if c["status"] == "PASS":      weighted_score += w
+        elif c["status"] == "WARNING": weighted_score += w * 0.4
+    score_pct = round((weighted_score / weighted_total * 100) if weighted_total > 0 else 0, 1)
 
     return {
         "total": total,
