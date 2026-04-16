@@ -164,40 +164,29 @@ def scraperapi_url(target: str, key: str) -> str:
 
 
 async def fetch_page(client: httpx.AsyncClient, url: str, api_key: str | None = None) -> str | None:
+    """Fetch a policy page. No Playwright — policy pages are plain HTML, no JS needed.
+    Uses httpx first, ScraperAPI residential proxy as fallback if blocked."""
     try:
-        resp = await client.get(url, timeout=12, follow_redirects=True)
+        resp = await client.get(url, timeout=10, follow_redirects=True)
         if resp.status_code == 200:
             return resp.text
-        # Geblokkeerd — probeer ScraperAPI
+        # Blocked by Cloudflare/WAF — try ScraperAPI residential proxy
         if resp.status_code in {403, 429} and api_key:
-            r2 = await client.get(scraperapi_url(url, api_key), timeout=60, follow_redirects=True)
-            if r2.status_code == 200:
-                return r2.text
-        # Playwright fallback
-        if resp.status_code in {403, 429}:
-            return await _playwright_fetch(url)
+            try:
+                r2 = await client.get(scraperapi_url(url, api_key), timeout=30, follow_redirects=True)
+                if r2.status_code == 200:
+                    return r2.text
+            except Exception:
+                pass
         return None
     except httpx.RequestError:
         if api_key:
             try:
-                r2 = await client.get(scraperapi_url(url, api_key), timeout=60, follow_redirects=True)
-                if r2.status_code == 200: return r2.text
-            except Exception: pass
-        return await _playwright_fetch(url)
-
-
-async def _playwright_fetch(url: str) -> str | None:
-    try:
-        from playwright.async_api import async_playwright
-        async with async_playwright() as p:
-            b = await p.chromium.launch(headless=True)
-            ctx = await b.new_context(user_agent=HUMAN_UA, viewport={"width": 1280, "height": 800})
-            page = await ctx.new_page()
-            await page.goto(url, wait_until="networkidle", timeout=25000)
-            html = await page.content()
-            await b.close()
-            return html
-    except Exception:
+                r2 = await client.get(scraperapi_url(url, api_key), timeout=30, follow_redirects=True)
+                if r2.status_code == 200:
+                    return r2.text
+            except Exception:
+                pass
         return None
 
 
@@ -435,7 +424,7 @@ PHONE_PATTERN = re.compile(
 )
 ADDRESS_KEYWORDS = [
     "street", "avenue", "road", "lane", "boulevard", "drive", "straat", "weg",
-    "laan", "plein", "steenweg", "postbus", "p\.o\. box", "po box",
+    "laan", "plein", "steenweg", "postbus", r"p\.o\. box", "po box",
     r"\b\d{4,6}\s+[a-z]{2,}\b",  # Dutch/EU postal codes like "1234 AB"
     r"\b[a-z]{2,}\s+\d{4,6}\b",  # postal code after city
 ]
@@ -471,10 +460,16 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
     has_phone = bool([p for p in phones if len(re.sub(r'\D', '', p)) >= 7])
 
     # Check for physical address
-    has_address = any(
-        re.search(kw, text, re.IGNORECASE)
-        for kw in ADDRESS_KEYWORDS
-    )
+    has_address = False
+    for kw in ADDRESS_KEYWORDS:
+        try:
+            if re.search(kw, text, re.IGNORECASE):
+                has_address = True
+                break
+        except re.error:
+            if kw.lower() in text.lower():
+                has_address = True
+                break
 
     found = sum([has_email, has_phone, has_address])
     details = []
