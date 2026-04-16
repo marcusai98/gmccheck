@@ -106,8 +106,13 @@ async def get_collections_via_json(client, base_url, api_key=None) -> list[dict]
     if not data or "collections" not in data:
         return []
     return [
-        {"handle": c.get("handle", ""), "title": c.get("title", ""),
-         "url": f"{base_url}/collections/{c.get('handle', '')}", "id": c.get("id")}
+        {
+            "handle": c.get("handle", ""),
+            "title": c.get("title", ""),
+            "url": f"{base_url}/collections/{c.get('handle', '')}",
+            "id": c.get("id"),
+            "products_count_api": c.get("products_count"),  # use directly, avoid extra requests
+        }
         for c in data["collections"]
     ]
 
@@ -178,12 +183,16 @@ async def get_product_count_via_scrape(client, collection_url, api_key=None) -> 
 # ---------------------------------------------------------------------------
 
 async def check_collection(client, base_url, collection, api_key=None) -> dict:
-    count = await get_product_count_via_json(client, base_url, collection["handle"], api_key)
-    method = "json"
-
-    if count is None:
-        count = await get_product_count_via_scrape(client, collection["url"], api_key)
-        method = "scrape"
+    # Fast path: use products_count from collections.json API (no extra HTTP request needed)
+    api_count = collection.get("products_count_api")
+    if api_count is not None:
+        count, method = api_count, "api_field"
+    else:
+        count = await get_product_count_via_json(client, base_url, collection["handle"], api_key)
+        method = "json"
+        if count is None:
+            count = await get_product_count_via_scrape(client, collection["url"], api_key)
+            method = "scrape"
 
     if count is None:
         return {**collection, "product_count": None, "status": "WARNING",
@@ -268,7 +277,16 @@ async def run_product_checks(store_url: str, scraperapi_key: str | None = None) 
                 timeout=PRODUCT_SCAN_TIMEOUT,
             )
         except asyncio.TimeoutError:
-            col_results = []
+            # Fallback: build results from API count field if available (no extra requests needed)
+            col_results = [
+                {**c, "product_count": c.get("products_count_api"),
+                 "status": "WARNING" if c.get("products_count_api") is None else
+                           ("FAIL" if c["products_count_api"] == 0 else
+                            "WARNING" if c["products_count_api"] < MIN_PRODUCTS else "PASS"),
+                 "explanation": f"{c.get('products_count_api', '?')} products (from API).",
+                 "method": "api_field_fallback"}
+                for c in collections
+            ] if any(c.get("products_count_api") is not None for c in collections) else []
             total = {"total_products": None, "status": "WARNING", "explanation": "Product scan timed out after 90s."}
 
         empty = [c for c in col_results if c.get("product_count") == 0]
