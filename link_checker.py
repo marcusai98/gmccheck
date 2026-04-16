@@ -55,6 +55,10 @@ ALLOWED_EXTERNAL_PATTERNS = [
     "myshopify.com", "fonts.googleapis", "googletagmanager",
     "google-analytics", "facebook.com", "instagram.com", "tiktok.com",
     "twitter.com", "x.com", "youtube.com", "maps.google",
+    "maps.app.goo.gl", "goo.gl", "g.page", "linktr.ee",
+    "pinterest.com", "trustpilot.com", "reviews.io", "judge.me",
+    "klaviyo.com", "mailchimp.com", "afterpay.com", "klarna.com",
+    "paypal.com", "stripe.com", "shopify.com", "cdn.shopify",
     "afterpay.com", "klarna.com", "affirm.com", "trustpilot.com",
 ]
 
@@ -180,7 +184,9 @@ def classify_page_type(url):
     return "Other"
 
 def extract_emails(text):
-    return re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}", text)
+    # Word boundary after TLD prevents "support@domain.comSomeText" matches
+    raw = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    return list(dict.fromkeys(raw))  # deduplicate, preserve order
 
 def extract_links(html, base_url):
     soup = BeautifulSoup(html, "html.parser")
@@ -340,13 +346,15 @@ async def run_link_check(store_url: str) -> dict:
                         link_texts[link_url] = link_text
 
                 elif not is_allowed_external(link_url):
-                    result.wrong_domain_links.append(WrongDomainLink(
-                        url=link_url,
-                        wrong_domain=link_domain,
-                        found_on=page_url,
-                        link_text=link_text,
-                        page_type=classify_page_type(page_url),
-                    ))
+                    # Deduplicate: only add each unique URL once
+                    if not any(w.url == link_url for w in result.wrong_domain_links):
+                        result.wrong_domain_links.append(WrongDomainLink(
+                            url=link_url,
+                            wrong_domain=link_domain,
+                            found_on=page_url,
+                            link_text=link_text,
+                            page_type=classify_page_type(page_url),
+                        ))
 
         # ── Check all internal links ──────────────────────────────────────
         async def check_link(url):
