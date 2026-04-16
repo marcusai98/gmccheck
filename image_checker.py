@@ -135,6 +135,39 @@ async def get_products_with_images(
             break
         page += 1
 
+    if products:
+        return products[:MAX_PRODUCTS_TO_CHECK]
+
+    # Fallback: scrape product images from collections page if API returns nothing
+    try:
+        r = await client.get(f"{base_url}/collections/all", timeout=12, follow_redirects=True)
+        html = r.text if r.status_code == 200 else None
+        if not html:
+            r2 = await client.get(base_url, timeout=12, follow_redirects=True)
+            html = r2.text if r2.status_code == 200 else None
+        if html:
+            from bs4 import BeautifulSoup
+            import re as _re
+            soup = BeautifulSoup(html, "html.parser")
+            seen_imgs = set()
+            for img in soup.find_all("img", src=True):
+                src = img["src"]
+                if not src.startswith("http"):
+                    src = "https:" + src if src.startswith("//") else base_url + src
+                # Only product/CDN images, skip icons/logos
+                if any(x in src for x in ["cdn.shopify", "products/", "/files/", "images/"]) and src not in seen_imgs:
+                    seen_imgs.add(src)
+                    products.append({
+                        "title": img.get("alt", "Product"),
+                        "handle": "",
+                        "url": base_url,
+                        "image_url": src,
+                    })
+                if len(products) >= MAX_PRODUCTS_TO_CHECK:
+                    break
+    except Exception:
+        pass
+
     return products[:MAX_PRODUCTS_TO_CHECK]
 
 
