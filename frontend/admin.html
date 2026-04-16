@@ -203,6 +203,7 @@ function logout() {
 if (sessionStorage.getItem('gmc_admin')) {
   document.getElementById('loginWrap').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
+  loadData();
 }
 
 function showTab(name, btn) {
@@ -236,8 +237,8 @@ function renderStats() {
   document.getElementById('statDomains').textContent = domains.size;
   const highRisk = _scans.filter(s => (s.score_pct || 0) < 60).length;
   document.getElementById('statHighRisk').textContent = highRisk;
-  const avg = _scans.length ? (_scans.reduce((a,s) => a + (s.score_pct||0), 0) / _scans.length).toFixed(1) : '—';
-  document.getElementById('statAvg').textContent = avg !== '—' ? avg + '%' : '—';
+  const avg = _scans.length ? (_scans.reduce((a,s) => a + (s.score_pct||0), 0) / _scans.length).toFixed(1) : null;
+  document.getElementById('statAvg').textContent = avg !== null ? avg + '%' : '—';
   document.getElementById('leadsCount').textContent = _leads.length + ' leads';
   document.getElementById('scansCount').textContent = _scans.length + ' scans';
 }
