@@ -367,14 +367,48 @@ NAV_KEYWORDS = {
 _nav_cache: dict = {}  # base_url → discovered links (per request lifetime)
 
 
-async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
-    """Scrape homepage nav/footer to discover actual policy page URLs for any language."""
-    if base_url in _nav_cache:
-        return _nav_cache[base_url]
+PAGE_CATEGORY_KEYWORDS = {
+    "refund":   ["refund", "return", "rückgabe", "erstattung", "retour", "retoure",
+                 "remboursement", "devolución", "terugkeer", "widerruf", "ruckgabe"],
+    "shipping": ["shipping", "versand", "livraison", "envio", "verzending", "delivery",
+                 "lieferung", "versandpolitik", "bezorging"],
+    "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto",
+                 "contacteer", "reach-us", "get-in-touch", "support"],
+    "about":    ["about", "uber-uns", "ueber-uns", "uber_uns", "qui-sommes", "quienes",
+                 "over-ons", "notre-histoire", "our-story"],
+    "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad",
+                 "privacybeleid", "datenschutzrichtlinie", "cookie"],
+    "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden",
+                 "servicebedingungen", "nutzungsbedingungen"],
+    "faq":      ["faq", "frequently", "haufig", "häufig", "questions", "help",
+                 "hilfe", "veelgestelde"],
+}
 
+
+async def _discover_via_shopify_api(client, base_url) -> dict[str, str]:
+    """Use Shopify /pages.json to get all store pages — works regardless of IP blocking."""
+    try:
+        resp = await client.get(f"{base_url}/pages.json?limit=250", timeout=10)
+        if resp.status_code != 200:
+            return {}
+        pages = resp.json().get("pages", [])
+        discovered: dict[str, str] = {}
+        for page in pages:
+            handle = page.get("handle", "").lower()
+            title = page.get("title", "").lower()
+            combined = f"{handle} {title}"
+            for category, keywords in PAGE_CATEGORY_KEYWORDS.items():
+                if category not in discovered:
+                    if any(kw in combined for kw in keywords):
+                        discovered[category] = f"/pages/{page['handle']}"
+        return discovered
+    except Exception:
+        return {}
+
+
+async def _discover_via_nav_scrape(client, base_url, api_key) -> dict[str, str]:
+    """Fallback: scrape homepage nav links for page discovery."""
     html = await fetch_page(client, base_url, api_key)
-    if not html:
-        html = await fetch_page(client, base_url + "/", api_key)
     if not html:
         return {}
 
@@ -386,15 +420,32 @@ async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
         text = a.get_text(strip=True).lower()
         if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
             continue
-        # Only internal paths
         if href.startswith("http") and base_url not in href:
             continue
         path = href if href.startswith("/") else ("/" + href.split(base_url, 1)[-1].lstrip("/"))
         combined = (path + " " + text).lower()
-        for category, keywords in NAV_KEYWORDS.items():
+        for category, keywords in PAGE_CATEGORY_KEYWORDS.items():
             if category not in discovered:
                 if any(kw in combined for kw in keywords):
                     discovered[category] = path
+
+    return discovered
+
+
+async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
+    """Discover store pages. Uses Shopify API first (fast, no IP issues), nav scrape as fallback."""
+    if base_url in _nav_cache:
+        return _nav_cache[base_url]
+
+    # Primary: Shopify pages.json API (fast, always works, any language)
+    discovered = await _discover_via_shopify_api(client, base_url)
+
+    # Fallback: nav scrape (for non-Shopify or if API returns nothing useful)
+    if len(discovered) < 3:
+        nav = await _discover_via_nav_scrape(client, base_url, api_key)
+        for k, v in nav.items():
+            if k not in discovered:
+                discovered[k] = v
 
     _nav_cache[base_url] = discovered
     return discovered
@@ -842,7 +893,7 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
         # Pre-fetch nav pages ONCE — prevents 13 concurrent homepage fetches (race condition)
         try:
             nav_pages = await asyncio.wait_for(
-                discover_nav_pages(client, base_url, api_key), timeout=15
+                discover_nav_pages(client, base_url, api_key), timeout=30
             )
         except Exception:
             nav_pages = {}
