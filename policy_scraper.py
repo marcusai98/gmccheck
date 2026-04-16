@@ -495,12 +495,7 @@ async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
     """Refund/return policy must be linked from the homepage footer."""
     html, url = await fetch_first_available(client, base_url, ["/"], api_key)
     if not html:
-        # fallback: fetch homepage directly
-        try:
-            r = await client.get(base_url, timeout=15, follow_redirects=True)
-            html = r.text if r.status_code == 200 else None
-        except Exception:
-            html = None
+        html = await fetch_page(client, base_url, api_key)
     if not html:
         return {"status": "WARNING", "url": base_url,
                 "explanation": "Could not fetch homepage to check footer links."}
@@ -553,11 +548,10 @@ async def check_refund_policy_quality(client, base_url, api_key=None) -> dict:
 
 async def check_payment_methods_visible(client, base_url, api_key=None) -> dict:
     """Check if payment method logos/names are visible on the homepage."""
-    try:
-        r = await client.get(base_url, timeout=15, follow_redirects=True)
-        html = r.text if r.status_code == 200 else None
-    except Exception:
-        html = None
+    html = await fetch_page(client, base_url, api_key)
+    if not html:
+        # try with trailing slash
+        html = await fetch_page(client, base_url + "/", api_key)
     if not html:
         return {"status": "WARNING", "url": base_url,
                 "explanation": "Could not fetch homepage to check payment methods."}
