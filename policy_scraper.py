@@ -49,19 +49,41 @@ CONTACT_PATHS = [
 
 SHIPPING_CRITICAL = {
     "delivery_time": [
+        # English
         r"\d+[-–]\d+\s+(business\s+)?days?",
         r"\d+\s+(business\s+)?days?",
         r"(standard|express|expedited)\s+(shipping|delivery)",
         r"(delivery|shipping)\s+(time|timeframe|estimate|window)",
         r"arrives?\s+(in|within)\s+\d+",
         r"(within|in)\s+\d+[-–\s]\d+\s+(business\s+)?days?",
+        # German
+        r"\d+[-–]\d+\s+(werktag|werkdag|arbeitstag)",
+        r"\d+\s+(werktag|werkdag|arbeitstag)",
+        r"lieferzeit", r"lieferdauer", r"liefert\s+in",
+        r"versanddauer", r"zustellung\s+(innerhalb|in)\s+\d+",
+        r"lieferung\s+(innerhalb|in|erfolgt)",
+        # Dutch
+        r"levertijd", r"levert\s+binnen", r"verzendtijd",
+        r"\d+[-–]\d+\s+werkdag", r"binnen\s+\d+\s+werkdag",
+        # French
+        r"délai\s+de\s+livraison", r"livraison\s+en\s+\d+",
+        r"jours?\s+ouvrables?", r"jours?\s+ouvré",
     ],
     "shipping_cost": [
+        # English
         r"free\s+shipping", r"free\s+deliver",
         r"shipping\s+(cost|fee|price|rate|is\s+free)",
         r"\$[\d.]+\s*(shipping|delivery)", r"flat\s+rate",
         r"calculated\s+at\s+checkout", r"free\s+over\s+\$",
         r"no\s+shipping\s+(cost|fee|charge)",
+        # German
+        r"versandkost", r"versandfrei", r"kostenlos(er)?\s+versand",
+        r"gratis\s+versand", r"versandkosten\s+(ab|frei|kostenlos|betragen)",
+        r"porto", r"€[\d,.]+\s*versand",
+        # Dutch
+        r"verzendkost", r"gratis\s+verzend", r"verzending\s+(gratis|vrij|kosten)",
+        # French
+        r"frais\s+de\s+port", r"livraison\s+gratuite", r"port\s+offert",
     ],
 }
 
@@ -86,20 +108,40 @@ SHIPPING_RECOMMENDED = {
 
 REFUND_CRITICAL = {
     "return_window": [
+        # English
         r"\d+[\s-]day\s+return",
         r"return(s)?\s+within\s+\d+",
         r"within\s+\d+\s+days?\s+of\s+(purchase|delivery|receipt)",
         r"\d+\s+days?\s+to\s+return",
         r"(30|60|90|14|7)\s+day(s)?\s+(return|refund|money)",
         r"hassle[\s-]free\s+return",
+        # German
+        r"\d+\s+(tage|tagen)\s+(rückgabe|rücksendung|widerruf|rückgaberecht)",
+        r"rückgabefrist", r"widerrufsfrist", r"rückgaberecht",
+        r"innerhalb\s+von\s+\d+\s+tagen",
+        r"\d+[\s-]tägig(es?)?\s+(rückgabe|widerruf)",
+        # Dutch
+        r"\d+\s+dag(en)?\s+(retour|terugsturen|retourneren)",
+        r"retourperiode", r"retourneren\s+binnen\s+\d+",
+        # French
+        r"\d+\s+jours?\s+(pour\s+)?(retourner|renvoyer|retour)",
+        r"droit\s+de\s+rétractation", r"délai\s+de\s+retour",
     ],
     "return_shipping_cost": [
+        # English
         r"(customer|buyer|you)\s+(pay|is\s+responsible|covers?)\s+(for\s+)?return",
         r"free\s+return(s)?",
         r"return\s+shipping\s+(is\s+)?(free|covered|paid|at\s+your\s+cost)",
         r"prepaid\s+return(s)?\s+label",
         r"return\s+(postage|label|cost|fee)",
         r"we\s+(cover|pay\s+for)\s+return",
+        # German
+        r"rücksendekosten", r"rückversand\s+(kostenlos|gratis|kostenfrei|auf\s+kosten)",
+        r"kostenlose\s+(rücksendung|rückgabe|retoure)",
+        r"rücksendung\s+(ist\s+)?(kostenlos|kostenfrei|gratis)",
+        r"porto\s+(wird\s+)?(erstattet|übernommen|kostenlos)",
+        # Dutch
+        r"retourkosten", r"gratis\s+retour", r"retourverzending\s+(gratis|kosteloos)",
     ],
 }
 
