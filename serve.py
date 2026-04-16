@@ -30,11 +30,16 @@ from link_checker import run_link_check
 from policy_scraper import run_policy_checks
 from product_checker import run_product_checks
 from image_checker import run_image_checks
+from database import init_db, save_scan, get_recent_scans, get_scan_by_id, get_scans_for_domain
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 app = FastAPI(title="GMC Compliance Check")
+
+@app.on_event("startup")
+async def startup():
+    init_db()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -58,6 +63,24 @@ async def serve_frontend() -> FileResponse:
 @app.get("/health")
 async def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/history")
+async def history(limit: int = 20):
+    return {"scans": get_recent_scans(limit)}
+
+
+@app.get("/api/history/{scan_id}")
+async def scan_detail(scan_id: int):
+    scan = get_scan_by_id(scan_id)
+    if not scan:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    return scan
+
+
+@app.get("/api/history/domain/{domain}")
+async def domain_history(domain: str, limit: int = 10):
+    return {"scans": get_scans_for_domain(domain, limit)}
 
 
 def ensure_url(url: str) -> str:
@@ -113,6 +136,10 @@ async def scan_steps(store_url: str) -> AsyncGenerator[Dict[str, Any], None]:
     combined["all_checks"] = all_checks
     combined["score"] = score
     combined["summary"] = summary
+
+    # Persist scan to SQLite
+    scan_id = save_scan(store_url, score, combined)
+    combined["scan_id"] = scan_id
 
     yield {
         "type": "complete",
