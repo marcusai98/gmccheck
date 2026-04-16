@@ -372,13 +372,21 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
     base_url = get_base_url(store_url)
     api_key = scraperapi_key or os.getenv("SCRAPERAPI_KEY")
 
+    timeout_result = {"status": "WARNING", "explanation": "Policy check timed out.", "duplicates": []}
+
     async with httpx.AsyncClient(headers={"User-Agent": HUMAN_UA}, follow_redirects=True) as client:
-        shipping, duplicate, refund, hours = await asyncio.gather(
-            check_shipping_policy(client, base_url, api_key),
-            check_duplicate_shipping_policy(client, base_url, api_key),
-            check_refund_policy(client, base_url, api_key),
-            check_customer_service_hours(client, base_url, api_key),
-        )
+        try:
+            shipping, duplicate, refund, hours = await asyncio.wait_for(
+                asyncio.gather(
+                    check_shipping_policy(client, base_url, api_key),
+                    check_duplicate_shipping_policy(client, base_url, api_key),
+                    check_refund_policy(client, base_url, api_key),
+                    check_customer_service_hours(client, base_url, api_key),
+                ),
+                timeout=90,
+            )
+        except asyncio.TimeoutError:
+            shipping = duplicate = refund = hours = {**timeout_result}
 
     statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"]]
     overall = "FAIL" if "FAIL" in statuses else "WARNING" if "WARNING" in statuses else "PASS"

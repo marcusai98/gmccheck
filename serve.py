@@ -71,18 +71,18 @@ def ensure_url(url: str) -> str:
 
 async def scan_steps(store_url: str) -> AsyncGenerator[Dict[str, Any], None]:
     steps = [
-        ("trust", run_trust_checks),
-        ("links", run_link_check),
-        ("policies", run_policy_checks),
-        ("products", run_product_checks),
-        ("images", run_image_checks),
+        ("trust",    run_trust_checks,   60),
+        ("links",    run_link_check,      90),
+        ("policies", run_policy_checks,  100),
+        ("products", run_product_checks, 100),
+        ("images",   run_image_checks,    70),
     ]
 
     step_results: Dict[str, Any] = {}
 
-    for step_name, func in steps:
+    for step_name, func, step_timeout in steps:
         try:
-            result = await func(store_url)
+            result = await asyncio.wait_for(func(store_url), timeout=step_timeout)
             step_results[step_name] = result
             yield {
                 "type": "progress",
@@ -90,13 +90,12 @@ async def scan_steps(store_url: str) -> AsyncGenerator[Dict[str, Any], None]:
                 "status": "done",
                 "result": result,
             }
-        except Exception as exc:  # pragma: no cover - defensive
-            yield {
-                "type": "error",
-                "step": step_name,
-                "message": str(exc),
-            }
-            return
+        except asyncio.TimeoutError:
+            step_results[step_name] = {"status": "WARNING", "explanation": f"{step_name.capitalize()} check timed out after {step_timeout}s."}
+            yield {"type": "progress", "step": step_name, "status": "done", "result": step_results[step_name]}
+        except Exception as exc:
+            step_results[step_name] = {}
+            yield {"type": "progress", "step": step_name, "status": "done", "result": {}}
 
     combined = {
         "store_url": store_url,
