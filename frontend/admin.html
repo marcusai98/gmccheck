@@ -200,10 +200,18 @@ function logout() {
   location.reload();
 }
 
-if (sessionStorage.getItem('gmc_admin')) {
-  document.getElementById('loginWrap').style.display = 'none';
-  document.getElementById('dashboard').style.display = 'block';
-  loadData();
+function initAdmin() {
+  if (sessionStorage.getItem('gmc_admin')) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAdmin);
+} else {
+  initAdmin();
 }
 
 function showTab(name, btn) {
@@ -226,7 +234,8 @@ async function loadData() {
     renderScans();
     document.getElementById('lastRefresh').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB');
   } catch(e) {
-    console.error(e);
+    console.error('loadData error:', e);
+    document.getElementById('leadsBody').innerHTML = `<div class="empty-state" style="color:#FF453A;">Failed to load data: ${e.message}. Try refreshing.</div>`;
   }
 }
 
