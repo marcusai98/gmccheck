@@ -44,6 +44,10 @@ CHECK_WEIGHTS = {
     "About Us":                     1,
     "Contact page":                 3,   # GMC requires contact info
     "FAQ page":                     1,
+    "Contact info completeness":    3,   # Google requires 2 of: address, phone, email
+    "Refund policy in footer":      3,   # Must be linked from homepage footer
+    "Refund policy content":        2,   # Must cover cancellation, refund method, procedure
+    "Payment methods visible":      1,   # Trust signal
     "Empty collections":            2,
     "Products per collection (min. 5)": 1, # Advisory
     "Duplicate product images":     2,
@@ -143,6 +147,29 @@ def extract_all_checks(results: dict) -> list[dict]:
                    **policy.get("contact_page", {"status": "ERROR", "explanation": ""})})
     checks.append({"name": "FAQ page", "category": "Policies",
                    **policy.get("faq", {"status": "ERROR", "explanation": ""})})
+
+    # Google Misrepresentation Checklist — 4 additional checks
+    cc = policy.get("contact_info_completeness", {"status": "ERROR", "explanation": ""})
+    checks.append({"name": "Contact info completeness", "category": "Policies",
+                   "status": cc.get("status", "ERROR"),
+                   "explanation": cc.get("explanation", ""),
+                   "url": cc.get("url")})
+    rf = policy.get("refund_in_footer", {"status": "ERROR", "explanation": ""})
+    checks.append({"name": "Refund policy in footer", "category": "Policies",
+                   "status": rf.get("status", "ERROR"),
+                   "explanation": rf.get("explanation", ""),
+                   "url": rf.get("url")})
+    rq = policy.get("refund_policy_quality", {"status": "ERROR", "explanation": ""})
+    checks.append({"name": "Refund policy content", "category": "Policies",
+                   "status": rq.get("status", "ERROR"),
+                   "explanation": rq.get("explanation", ""),
+                   "url": rq.get("url"),
+                   "items": rq.get("items", [])})
+    pm = policy.get("payment_methods", {"status": "ERROR", "explanation": ""})
+    checks.append({"name": "Payment methods visible", "category": "Trust",
+                   "status": pm.get("status", "ERROR"),
+                   "explanation": pm.get("explanation", ""),
+                   "url": pm.get("url")})
 
     # Product checks
     product = results.get("products", {}).get("checks", {})

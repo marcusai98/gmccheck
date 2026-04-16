@@ -426,6 +426,164 @@ async def check_faq(client, base_url, api_key=None) -> dict:
             "explanation": "FAQ page found with content."}
 
 
+# ---------------------------------------------------------------------------
+# Google Misrepresentation Checklist — 4 additional checks
+# ---------------------------------------------------------------------------
+
+PHONE_PATTERN = re.compile(
+    r'(\+?\d[\d\s\-\.\(\)]{6,17}\d)',
+)
+ADDRESS_KEYWORDS = [
+    "street", "avenue", "road", "lane", "boulevard", "drive", "straat", "weg",
+    "laan", "plein", "steenweg", "postbus", "p\.o\. box", "po box",
+    r"\b\d{4,6}\s+[a-z]{2,}\b",  # Dutch/EU postal codes like "1234 AB"
+    r"\b[a-z]{2,}\s+\d{4,6}\b",  # postal code after city
+]
+PAYMENT_KEYWORDS = [
+    "visa", "mastercard", "paypal", "ideal", "klarna", "afterpay", "american express",
+    "amex", "maestro", "bancontact", "sofort", "apple pay", "google pay",
+    "sepa", "przelewy", "diners", "discover",
+]
+REFUND_CONTENT_SECTIONS = {
+    "cancellation period": [r"\d+\s*(day|dagen|werkdag|business day)", "cancel", "cancellation period", "retourperiode", "retour binnen"],
+    "refund method": ["refund to", "original payment", "store credit", "terugbetaal", "creditcard", "same payment"],
+    "damaged goods": ["damaged", "defective", "incorrect", "wrong item", "beschadigd", "defect", "verkeerd"],
+    "return procedure": ["email", "contact", "form", "portal", "procedure", "how to return", "retour aanvragen", "stap"],
+    "shipping costs": ["shipping cost", "verzendkosten", "postage", "free return", "gratis retour", "at your own cost"],
+}
+
+
+async def check_contact_info_completeness(client, base_url, api_key=None) -> dict:
+    """Google requires at least 2 of: physical address, phone, email on Contact + Refund pages."""
+    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key)
+    if not html:
+        return {"status": "FAIL", "url": None,
+                "explanation": "Contact page not found. Google requires physical address, phone, or email."}
+
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+
+    # Check for email
+    emails = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    has_email = bool(emails)
+
+    # Check for phone number
+    phones = PHONE_PATTERN.findall(text)
+    has_phone = bool([p for p in phones if len(re.sub(r'\D', '', p)) >= 7])
+
+    # Check for physical address
+    has_address = any(
+        re.search(kw, text, re.IGNORECASE)
+        for kw in ADDRESS_KEYWORDS
+    )
+
+    found = sum([has_email, has_phone, has_address])
+    details = []
+    if has_email: details.append("email ✓")
+    if has_phone: details.append("phone ✓")
+    if has_address: details.append("address ✓")
+    missing = []
+    if not has_email: missing.append("email")
+    if not has_phone: missing.append("phone number")
+    if not has_address: missing.append("physical address")
+
+    if found >= 2:
+        return {"status": "PASS", "url": url,
+                "explanation": f"Contact page has {found}/3 required contact methods: {', '.join(details)}."}
+    if found == 1:
+        return {"status": "WARNING", "url": url,
+                "explanation": f"Contact page only has {', '.join(details)}. Google requires at least 2 of: address, phone, email. Missing: {', '.join(missing)}."}
+    return {"status": "FAIL", "url": url,
+            "explanation": f"Contact page missing all required contact info. Add at least 2 of: physical address, phone number, email address."}
+
+
+async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
+    """Refund/return policy must be linked from the homepage footer."""
+    html, url = await fetch_first_available(client, base_url, ["/"], api_key)
+    if not html:
+        # fallback: fetch homepage directly
+        try:
+            r = await client.get(base_url, timeout=15, follow_redirects=True)
+            html = r.text if r.status_code == 200 else None
+        except Exception:
+            html = None
+    if not html:
+        return {"status": "WARNING", "url": base_url,
+                "explanation": "Could not fetch homepage to check footer links."}
+
+    soup = BeautifulSoup(html, "html.parser")
+    footer = soup.find("footer") or soup.find(id=re.compile("footer", re.I)) or soup.find(class_=re.compile("footer", re.I))
+    search_area = footer or soup  # fallback to full page if no footer tag
+
+    links = search_area.find_all("a", href=True)
+    for link in links:
+        href = (link.get("href") or "").lower()
+        text = link.get_text(strip=True).lower()
+        if any(kw in href or kw in text for kw in ["refund", "return", "retour", "terugkeer"]):
+            return {"status": "PASS", "url": base_url,
+                    "explanation": f"Return/refund policy linked in footer (\"{link.get_text(strip=True)}\")."}
+
+    return {"status": "FAIL", "url": base_url,
+            "explanation": "No link to return/refund policy found in footer. Google requires this to be visible on the homepage."}
+
+
+async def check_refund_policy_quality(client, base_url, api_key=None) -> dict:
+    """Check refund policy for required content sections per Google's checklist."""
+    html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key)
+    if not html:
+        return {"status": "FAIL", "url": None,
+                "explanation": "Refund policy not found — content quality could not be assessed."}
+
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
+    missing_sections = []
+
+    for section, patterns in REFUND_CONTENT_SECTIONS.items():
+        found = any(
+            bool(re.search(p, text, re.IGNORECASE) if p.startswith(r'\d') or p.startswith(r'\b') else (p in text))
+            for p in patterns
+        )
+        if not found:
+            missing_sections.append(section)
+
+    if not missing_sections:
+        return {"status": "PASS", "url": url,
+                "explanation": "Refund policy covers all required sections: cancellation period, refund method, damaged goods, return procedure, shipping costs."}
+    if len(missing_sections) <= 2:
+        return {"status": "WARNING", "url": url,
+                "explanation": f"Refund policy missing {len(missing_sections)} section(s): {', '.join(missing_sections)}.",
+                "items": [{"text": s} for s in missing_sections]}
+    return {"status": "FAIL", "url": url,
+            "explanation": f"Refund policy is incomplete — missing {len(missing_sections)}/5 required sections: {', '.join(missing_sections)}.",
+            "items": [{"text": s} for s in missing_sections]}
+
+
+async def check_payment_methods_visible(client, base_url, api_key=None) -> dict:
+    """Check if payment method logos/names are visible on the homepage."""
+    try:
+        r = await client.get(base_url, timeout=15, follow_redirects=True)
+        html = r.text if r.status_code == 200 else None
+    except Exception:
+        html = None
+    if not html:
+        return {"status": "WARNING", "url": base_url,
+                "explanation": "Could not fetch homepage to check payment methods."}
+
+    soup = BeautifulSoup(html, "html.parser")
+    # Check text + img src/alt for payment keywords
+    page_text = soup.get_text(separator=" ").lower()
+    img_srcs = " ".join((img.get("src", "") + " " + img.get("alt", "")).lower() for img in soup.find_all("img"))
+    combined = page_text + " " + img_srcs
+
+    found = [kw for kw in PAYMENT_KEYWORDS if kw in combined]
+    if len(found) >= 2:
+        return {"status": "PASS", "url": base_url,
+                "explanation": f"Payment methods visible on homepage: {', '.join(found[:5])}."}
+    if len(found) == 1:
+        return {"status": "WARNING", "url": base_url,
+                "explanation": f"Only 1 payment method visible ({found[0]}). Add payment icons to footer for customer trust."}
+    return {"status": "WARNING", "url": base_url,
+            "explanation": "No payment method logos or names detected on homepage. Add Visa/Mastercard/PayPal icons to footer."}
+
+
 async def check_customer_service_hours(client, base_url, api_key=None) -> dict:
     html, url = await fetch_first_available(client, base_url, CONTACT_PATHS, api_key)
 
@@ -464,7 +622,8 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
 
     async with httpx.AsyncClient(headers={"User-Agent": HUMAN_UA}, follow_redirects=True) as client:
         try:
-            shipping, duplicate, refund, hours, privacy, tos, about, contact, faq = await asyncio.wait_for(
+            (shipping, duplicate, refund, hours, privacy, tos, about, contact, faq,
+             contact_completeness, refund_footer, refund_quality, payment_methods) = await asyncio.wait_for(
                 asyncio.gather(
                     check_shipping_policy(client, base_url, api_key),
                     check_duplicate_shipping_policy(client, base_url, api_key),
@@ -475,14 +634,21 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
                     check_about_us(client, base_url, api_key),
                     check_contact_page(client, base_url, api_key),
                     check_faq(client, base_url, api_key),
+                    check_contact_info_completeness(client, base_url, api_key),
+                    check_refund_in_footer(client, base_url, api_key),
+                    check_refund_policy_quality(client, base_url, api_key),
+                    check_payment_methods_visible(client, base_url, api_key),
                 ),
                 timeout=90,
             )
         except asyncio.TimeoutError:
-            shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = {**timeout_result}
+            shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = \
+                contact_completeness = refund_footer = refund_quality = payment_methods = {**timeout_result}
 
     statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"],
-                privacy["status"], tos["status"], about["status"], contact["status"], faq["status"]]
+                privacy["status"], tos["status"], about["status"], contact["status"], faq["status"],
+                contact_completeness["status"], refund_footer["status"], refund_quality["status"],
+                payment_methods["status"]]
     overall = "FAIL" if "FAIL" in statuses else "WARNING" if "WARNING" in statuses else "PASS"
 
     return {
@@ -498,6 +664,10 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
             "about_us": about,
             "contact_page": contact,
             "faq": faq,
+            "contact_info_completeness": contact_completeness,
+            "refund_in_footer": refund_footer,
+            "refund_policy_quality": refund_quality,
+            "payment_methods": payment_methods,
         },
     }
 
