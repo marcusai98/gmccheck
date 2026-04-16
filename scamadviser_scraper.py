@@ -54,32 +54,46 @@ def scraperapi_url(target: str, key: str) -> str:
 
 def parse_score(html: str) -> int | None:
     soup = BeautifulSoup(html, "html.parser")
-    # Methode 1: JSON in script tags
+    full_text = soup.get_text()
+
+    # Methode 1: JSON in script tags (meest betrouwbaar)
     for script in soup.find_all("script"):
         text = script.string or ""
-        for p in [r'"trustScore"\s*:\s*(\d+)', r'"score"\s*:\s*(\d+)',
-                  r'"trust_score"\s*:\s*(\d+)', r'trustScore["\s]*[:=]["\s]*(\d+)']:
+        for p in [
+            r'"trustScore"\s*:\s*(\d+)',
+            r'"trust_score"\s*:\s*(\d+)',
+            r'"score"\s*:\s*(\d+)',
+            r'trustScore["\s]*[:=]["\s]*(\d+)',
+            r'"rating"\s*:\s*(\d+)',
+        ]:
             m = re.search(p, text)
             if m:
                 s = int(m.group(1))
-                if 0 <= s <= 100: return s
-    # Methode 2: data-score attribuut
-    for tag in soup.find_all(attrs={"data-score": True}):
-        try:
-            s = int(tag["data-score"])
-            if 0 <= s <= 100: return s
-        except (ValueError, TypeError): continue
-    # Methode 3: X/100 patroon
-    m = re.search(r"\b(\d{1,3})\s*/\s*100", soup.get_text())
-    if m:
-        s = int(m.group(1))
-        if 0 <= s <= 100: return s
-    # Methode 4: score/trust klassen
-    for tag in soup.find_all(class_=re.compile(r"score|trust|rating", re.I)):
-        m = re.search(r"\b(\d{1,3})\b", tag.get_text(strip=True))
+                if 1 <= s <= 100: return s
+
+    # Methode 2: data-score / data-trust attribuut
+    for attr in ["data-score", "data-trust", "data-rating"]:
+        for tag in soup.find_all(attrs={attr: True}):
+            try:
+                s = int(tag[attr])
+                if 1 <= s <= 100: return s
+            except (ValueError, TypeError): continue
+
+    # Methode 3: <span> of <div> met grote standalone nummers naast "trust" context
+    for tag in soup.find_all(class_=re.compile(r"score|trust|rating|gauge|meter", re.I)):
+        txt = tag.get_text(strip=True)
+        m = re.match(r'^(\d{1,3})$', txt)
         if m:
             s = int(m.group(1))
             if 1 <= s <= 100: return s
+
+    # Methode 4: "Score: 78" of "78/100" patronen in paginatekst
+    for pattern in [r'[Ss]core[:\s]+(\d{1,3})', r'\b(\d{1,3})\s*/\s*100']:
+        m = re.search(pattern, full_text)
+        if m:
+            s = int(m.group(1))
+            if 1 <= s <= 100: return s
+
     return None
 
 
@@ -122,12 +136,15 @@ async def _fetch_playwright(url: str) -> tuple[int, str | None]:
             page = await ctx.new_page()
             await page.route("**/*.{png,jpg,jpeg,gif,svg,woff,woff2,ttf}",
                 lambda route: route.abort())
-            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            await page.goto(url, wait_until="networkidle", timeout=45000)
             try:
-                await page.wait_for_selector("[class*='score'],[data-score],[class*='trust']", timeout=8000)
+                await page.wait_for_selector(
+                    "[class*='score'],[data-score],[class*='trust'],[class*='Trust'],[class*='Score']",
+                    timeout=10000
+                )
             except Exception:
                 pass
-            await page.wait_for_timeout(2000)
+            await page.wait_for_timeout(3000)
             html = await page.content()
             await b.close()
             return 200, html
@@ -148,16 +165,21 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
     domain = get_domain(store_url)
     check_url = SCAMADVISER_URL.format(domain=domain)
 
-    # Fetch prioriteit: direct → ScraperAPI (met JS render) → Playwright
+    # ScamAdviser laadt score via JS — Playwright altijd eerst, ScraperAPI als backup, direct als laatste
     html, method = None, "failed"
-    status, html = await _fetch_direct(check_url)
-    if html: method = "direct"
+
+    # 1. Playwright (beste resultaat — wacht op JS rendering)
+    status, html = await _fetch_playwright(check_url)
+    if html:
+        method = "playwright"
+    # 2. ScraperAPI met JS rendering
     elif api_key:
         status, html = await _fetch_scraperapi(check_url, api_key)
         if html: method = "scraperapi+render"
+    # 3. Direct als laatste fallback (score zal waarschijnlijk ontbreken)
     if not html:
-        status, html = await _fetch_playwright(check_url)
-        if html: method = "playwright"
+        status, html = await _fetch_direct(check_url)
+        if html: method = "direct_no_js"
 
     if not html:
         hint = "" if api_key else " Stel SCRAPERAPI_KEY in voor VPS gebruik."
