@@ -63,6 +63,7 @@ ALLOWED_EXTERNAL_PATTERNS = [
 ]
 
 BROKEN_STATUSES = {400, 404, 405, 410, 500, 502, 503}
+TRANSIENT_STATUSES = {500, 502, 503}  # retry these once — often temporary
 BOT_BLOCK_STATUSES = {403, 429}
 
 REQUEST_TIMEOUT = 12
@@ -126,8 +127,9 @@ class LinkCheckResult:
 
     @property
     def broken_links_status(self):
-        critical = [b for b in self.broken_links if b.status_code == 404]
-        if critical: return "FAIL"
+        # 404/410 = truly gone → FAIL; 5xx = server errors (transient) → WARNING only
+        hard_broken = [b for b in self.broken_links if b.status_code in {404, 410}]
+        if hard_broken: return "FAIL"
         if self.broken_links: return "WARNING"
         return "PASS"
 
@@ -360,6 +362,10 @@ async def run_link_check(store_url: str) -> dict:
         async def check_link(url):
             async with semaphore:
                 status, _ = await fetch_httpx(client, url)
+                # Retry once on transient server errors (500/502/503 are often temporary)
+                if status in TRANSIENT_STATUSES:
+                    await asyncio.sleep(1.5)
+                    status, _ = await fetch_httpx(client, url)
                 return url, status
 
         link_checks = await asyncio.gather(

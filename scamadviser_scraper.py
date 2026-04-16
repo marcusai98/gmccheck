@@ -165,18 +165,21 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
     domain = get_domain(store_url)
     check_url = SCAMADVISER_URL.format(domain=domain)
 
-    # ScamAdviser laadt score via JS — Playwright altijd eerst, ScraperAPI als backup, direct als laatste
+    # ScamAdviser laadt score via JS — ScraperAPI residential eerst (VPS datacenter-IP
+    # wordt door Cloudflare geblokkeerd), Playwright als fallback, direct als laatste.
     html, method = None, "failed"
 
-    # 1. Playwright (beste resultaat — wacht op JS rendering)
-    status, html = await _fetch_playwright(check_url)
-    if html:
-        method = "playwright"
-    # 2. ScraperAPI met JS rendering
-    elif api_key:
+    # 1. ScraperAPI met JS rendering + residential proxy (meest betrouwbaar op VPS)
+    if api_key:
         status, html = await _fetch_scraperapi(check_url, api_key)
         if html: method = "scraperapi+render"
-    # 3. Direct as last fallback (score will likely be missing)
+
+    # 2. Playwright (werkt soms als Cloudflare datacenter-IP toevallig doorlaat)
+    if not html:
+        status, html = await _fetch_playwright(check_url)
+        if html: method = "playwright"
+
+    # 3. Direct als laatste fallback (score ontbreekt vrijwel altijd)
     if not html:
         status, html = await _fetch_direct(check_url)
         if html: method = "direct_no_js"
