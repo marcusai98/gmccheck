@@ -143,18 +143,38 @@ SHIPPING_CRITICAL_BY_LANG = {
 
 SHIPPING_RECOMMENDED = {
     "shipping_countries": [
+        # English
         r"(ship|deliver|shipping|delivery)\s+(to|worldwide|internationally|globally)",
         r"(united\s+states|usa|u\.s\.a?|canada|uk|europe|australia|worldwide)",
         r"(domestic|international)\s+(shipping|delivery|orders?)",
         r"countries?\s+we\s+ship", r"available\s+in",
         r"we\s+(ship|deliver)\s+to",
+        # German
+        r"wir\s+(liefern|versenden)\s+(in|nach|international)",
+        r"versand\s+(in|nach|weltweit|international)",
+        r"(deutschland|österreich|schweiz|europa|weltweit)\s+(versand|lieferung)",
+        r"liefern\s+(wir\s+)?(in|nach)\s+\w+",
+        # Dutch
+        r"wij\s+(verzenden|leveren)\s+(naar|in|wereldwijd)",
+        r"verzending\s+(naar|in|internationaal)",
+        # French
+        r"nous\s+livrons?\s+(en|à|dans|partout)",
+        r"livraison\s+(internationale|en\s+france|dans\s+le\s+monde)",
     ],
     "order_cutoff": [
+        # English
         r"order(s)?\s+(placed|received|submitted)\s+by",
         r"cut[\s-]?off\s+time",
         r"same[\s-]day\s+(shipping|dispatch|processing)",
         r"processing\s+(time|takes?|within)",
         r"orders?\s+placed\s+before",
+        # German
+        r"bestellung(en)?\s+(bis|vor)\s+\d+",
+        r"bearbeitungszeit", r"bestellungen?\s+werden\s+(am|noch)\s+(selben|gleichen)\s+tag",
+        r"expressversand", r"vor\s+\d+\s+uhr\s+bestell",
+        # Dutch
+        r"bestelling(en)?\s+(voor|vóór)\s+\d+",
+        r"verwerkingstijd", r"voor\s+\d+\s+uur\s+bestell",
     ],
 }
 
@@ -242,21 +262,53 @@ REFUND_CRITICAL_BY_LANG = {
 
 REFUND_RECOMMENDED = {
     "refund_processing_time": [
+        # English
         r"\d+[-–]\d+\s+(business\s+)?days?\s+(to\s+)?(process|refund|credit)",
         r"refund(s)?\s+(processed?|issued|applied)\s+(within|in)\s+\d+",
         r"allow\s+\d+\s+days?",
         r"processed?\s+within\s+\d+",
         r"(3|5|7|10|14)\s+(business\s+)?days?\s+(for\s+)?(refund|processing)",
+        # German
+        r"rückerstattung.{0,30}\d+\s+tag",
+        r"\d+\s+tage?\s+(kann\s+)?(dauern|bearbeitung|verarbeitung)",
+        r"bis\s+zu\s+\d+\s+tage",
+        r"bearbeitungszeit.{0,20}erstattung",
+        r"innerhalb.{0,20}\d+.{0,10}tag.{0,20}erstatt",
+        r"erstattung.{0,30}\d+\s+werktag",
+        # Dutch
+        r"terugbetaling.{0,20}\d+\s+dag",
+        r"restitutie.{0,20}\d+\s+dag",
+        r"binnen\s+\d+\s+dag.{0,10}terugbet",
+        # French
+        r"remboursement.{0,20}(sous|dans|en)\s+\d+\s+jour",
+        r"\d+\s+jours?.{0,20}remboursement",
     ],
     "exchange_policy": [
+        # English
         r"exchange(s)?", r"swap(ped)?", r"replac(e|ement)(s)?",
         r"we\s+(do\s+not\s+accept|offer|accept)\s+exchange",
         r"no\s+exchange",
+        # German
+        r"umtausch", r"austausch", r"tauschen\s+möchten",
+        r"artikel\s+(gegen|umtauschen)", r"gegen\s+ein\s+anderes\s+produkt",
+        # Dutch
+        r"omruil", r"ruilen", r"artikel\s+ruilen",
+        # French
+        r"échange(r)?", r"article\s+contre",
     ],
     "restocking_fee": [
+        # English
         r"restocking\s+fee", r"no\s+restocking",
         r"\d+%\s+restocking", r"restock(ing)?\s+charge",
         r"no\s+(additional\s+)?fee",
+        # German
+        r"wiedereinlagerung", r"keine\s+wiedereinlagerungsgebühr",
+        r"wiedereinlagerungsgebühr", r"keine\s+bearbeitungsgebühr",
+        r"keine\s+zusätzlichen\s+(kosten|gebühren)",
+        # Dutch
+        r"herbevoorradingskosten", r"geen\s+extra\s+kosten",
+        # French
+        r"frais\s+de\s+restockage", r"aucun\s+frais\s+supplémentaire",
     ],
 }
 
