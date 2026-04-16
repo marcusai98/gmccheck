@@ -190,7 +190,70 @@ async def fetch_page(client: httpx.AsyncClient, url: str, api_key: str | None = 
         return None
 
 
-async def fetch_first_available(client, base_url, paths, api_key=None):
+NAV_KEYWORDS = {
+    "refund":   ["refund", "return", "rückgabe", "erstattung", "retour", "retoure", "remboursement",
+                 "devolucion", "terugkeer", "widerruf", "rücknahme"],
+    "shipping": ["shipping", "versand", "livraison", "envio", "verzending", "delivery", "leveringen"],
+    "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto", "contacteer",
+                 "reach us", "get in touch", "support", "hilfe"],
+    "about":    ["about", "über uns", "uber-uns", "ueber-uns", "qui sommes", "quienes", "over ons",
+                 "notre histoire", "our story", "company"],
+    "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad", "privacybeleid",
+                 "cookie", "gdpr"],
+    "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden", "nutzungsbedingungen"],
+    "faq":      ["faq", "frequently", "häufig", "questions", "help", "hilfe"],
+}
+
+_nav_cache: dict = {}  # base_url → discovered links (per request lifetime)
+
+
+async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
+    """Scrape homepage nav/footer to discover actual policy page URLs for any language."""
+    if base_url in _nav_cache:
+        return _nav_cache[base_url]
+
+    html = await fetch_page(client, base_url, api_key)
+    if not html:
+        html = await fetch_page(client, base_url + "/", api_key)
+    if not html:
+        return {}
+
+    soup = BeautifulSoup(html, "html.parser")
+    discovered: dict[str, str] = {}
+
+    for a in soup.find_all("a", href=True):
+        href = a.get("href", "").strip()
+        text = a.get_text(strip=True).lower()
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
+        # Only internal paths
+        if href.startswith("http") and base_url not in href:
+            continue
+        path = href if href.startswith("/") else ("/" + href.split(base_url, 1)[-1].lstrip("/"))
+        combined = (path + " " + text).lower()
+        for category, keywords in NAV_KEYWORDS.items():
+            if category not in discovered:
+                if any(kw in combined for kw in keywords):
+                    discovered[category] = path
+
+    _nav_cache[base_url] = discovered
+    return discovered
+
+
+async def fetch_first_available(client, base_url, paths, api_key=None, nav_category=None):
+    # Try nav-discovered URL first (works for any language store)
+    if nav_category:
+        nav = await discover_nav_pages(client, base_url, api_key)
+        discovered_path = nav.get(nav_category)
+        if discovered_path:
+            url = base_url + discovered_path
+            html = await fetch_page(client, url, api_key)
+            if html:
+                text = BeautifulSoup(html, "html.parser").get_text()
+                if len(text.strip()) > 200:
+                    return html, url
+
+    # Fall back to predefined paths
     for path in paths:
         url = base_url + path
         html = await fetch_page(client, url, api_key)
@@ -221,7 +284,7 @@ def content_similarity(t1: str, t2: str) -> float:
 # ---------------------------------------------------------------------------
 
 async def check_shipping_policy(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, SHIPPING_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, SHIPPING_PATHS, api_key, nav_category="shipping")
 
     if not html:
         return {
@@ -289,7 +352,7 @@ async def check_duplicate_shipping_policy(client, base_url, api_key=None) -> dic
 
 
 async def check_refund_policy(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key, nav_category="refund")
 
     if not html:
         return {
@@ -340,7 +403,7 @@ FAQ_PATHS = ["/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-quest
 
 
 async def check_privacy_policy(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, PRIVACY_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, PRIVACY_PATHS, api_key, nav_category="privacy")
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Privacy Policy page not found. GMC requires a privacy policy disclosing data collection."}
@@ -358,7 +421,7 @@ async def check_privacy_policy(client, base_url, api_key=None) -> dict:
 
 
 async def check_terms_of_service(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, TOS_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, TOS_PATHS, api_key, nav_category="tos")
     if not html:
         return {"status": "WARNING", "url": None,
                 "explanation": "Terms of Service page not found. Recommended by GMC for store credibility."}
@@ -372,7 +435,7 @@ async def check_terms_of_service(client, base_url, api_key=None) -> dict:
 
 
 async def check_about_us(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, ABOUT_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, ABOUT_PATHS, api_key, nav_category="about")
     if not html:
         return {"status": "WARNING", "url": None,
                 "explanation": "About Us page not found. Adds trust signals for GMC reviewers."}
@@ -385,7 +448,7 @@ async def check_about_us(client, base_url, api_key=None) -> dict:
 
 
 async def check_contact_page(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key, nav_category="contact")
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Contact page not found. GMC requires a way for customers to reach you."}
@@ -403,7 +466,7 @@ async def check_contact_page(client, base_url, api_key=None) -> dict:
 
 
 async def check_faq(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, FAQ_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, FAQ_PATHS, api_key, nav_category="faq")
     if not html:
         return {"status": "WARNING", "url": None,
                 "explanation": "FAQ page not found. Recommended to address shipping/return questions proactively."}
@@ -444,7 +507,7 @@ REFUND_CONTENT_SECTIONS = {
 
 async def check_contact_info_completeness(client, base_url, api_key=None) -> dict:
     """Google requires at least 2 of: physical address, phone, email on Contact + Refund pages."""
-    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key, nav_category="contact")
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Contact page not found. Google requires physical address, phone, or email."}
@@ -518,7 +581,7 @@ async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
 
 async def check_refund_policy_quality(client, base_url, api_key=None) -> dict:
     """Check refund policy for required content sections per Google's checklist."""
-    html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key, nav_category="refund")
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Refund policy not found — content quality could not be assessed."}
@@ -574,7 +637,7 @@ async def check_payment_methods_visible(client, base_url, api_key=None) -> dict:
 
 
 async def check_customer_service_hours(client, base_url, api_key=None) -> dict:
-    html, url = await fetch_first_available(client, base_url, CONTACT_PATHS, api_key)
+    html, url = await fetch_first_available(client, base_url, CONTACT_PATHS, api_key, nav_category="contact")
 
     if not html:
         return {"status": "WARNING", "url": None,
