@@ -26,8 +26,9 @@ HUMAN_UA = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
-MIN_PRODUCTS = 5   # Minder dan dit → WARNING
-# Geen MAX_PRODUCTS meer — geen bovengrens
+MIN_PRODUCTS = 5      # Below this → WARNING
+MAX_COLLECTIONS = 30  # Check max 30 collections to avoid timeout on large stores
+PRODUCT_SCAN_TIMEOUT = 90  # seconds total for product checks
 
 
 def get_base_url(url: str) -> str:
@@ -253,11 +254,22 @@ async def run_product_checks(store_url: str, scraperapi_key: str | None = None) 
                 },
             }
 
-        # Controleer elke collectie parallel
-        col_results, total = await asyncio.gather(
-            asyncio.gather(*[check_collection(client, base_url, c, api_key) for c in collections]),
-            check_total_products(client, base_url, api_key),
-        )
+        # Cap collections to avoid timeout on large stores
+        if len(collections) > MAX_COLLECTIONS:
+            collections = collections[:MAX_COLLECTIONS]
+
+        # Controleer elke collectie parallel with overall timeout
+        try:
+            col_results, total = await asyncio.wait_for(
+                asyncio.gather(
+                    asyncio.gather(*[check_collection(client, base_url, c, api_key) for c in collections]),
+                    check_total_products(client, base_url, api_key),
+                ),
+                timeout=PRODUCT_SCAN_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            col_results = []
+            total = {"total_products": None, "status": "WARNING", "explanation": "Product scan timed out after 90s."}
 
         empty = [c for c in col_results if c.get("product_count") == 0]
         thin  = [c for c in col_results if c.get("product_count") and 0 < c["product_count"] < MIN_PRODUCTS]

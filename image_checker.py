@@ -29,7 +29,8 @@ HUMAN_UA = (
 DUPLICATE_THRESHOLD = 8
 
 # Max products to check (keep scan time reasonable)
-MAX_PRODUCTS_TO_CHECK = 100
+MAX_PRODUCTS_TO_CHECK = 40   # Reduced to avoid timeout on large stores
+IMAGE_SCAN_TIMEOUT = 60      # seconds total
 
 
 # ---------------------------------------------------------------------------
@@ -191,7 +192,13 @@ async def run_image_checks(store_url: str) -> dict:
             fetch_image(client, p["image_url"], semaphore)
             for p in products
         ]
-        image_bytes_list = await asyncio.gather(*image_tasks)
+        try:
+            image_bytes_list = await asyncio.wait_for(
+                asyncio.gather(*image_tasks), timeout=IMAGE_SCAN_TIMEOUT
+            )
+        except asyncio.TimeoutError:
+            return {"status": "WARNING", "explanation": "Image scan timed out after 60s — store may have too many products.",
+                    "duplicate_count": 0, "total_checked": 0, "duplicates": []}
 
         # ── Compute perceptual hashes ─────────────────────────────────────
         loop = asyncio.get_event_loop()
