@@ -368,8 +368,11 @@ async def run_link_check(store_url: str) -> dict:
                     status, _ = await fetch_httpx(client, url)
                 return url, status
 
+        # Cap at 50 links to avoid timeout on large stores
+        MAX_INTERNAL_LINKS = 50
+        internal_sample = list(internal.keys())[:MAX_INTERNAL_LINKS]
         link_checks = await asyncio.gather(
-            *[check_link(url) for url in internal],
+            *[check_link(url) for url in internal_sample],
             return_exceptions=True,
         )
 
