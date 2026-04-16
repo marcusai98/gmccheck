@@ -634,19 +634,18 @@ function showResults(report, url) {
         const shown = items.slice(0, MAX_SHOW);
         const hidden = items.slice(MAX_SHOW);
         itemsHtml = `<div class="check-items" id="${id}">`;
-        for (const item of shown) {
-          const url = item.url || item.email || item.wrong_domain || JSON.stringify(item);
+        const renderItem = (item) => {
+          const raw = item.url || item.email || item.wrong_domain || JSON.stringify(item);
+          const isUrl = raw.startsWith('http');
+          const label = isUrl ? `<a href="${raw}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:0.85;">${raw}</a>` : raw;
           const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
-          itemsHtml += `<div class="check-item ${cls}">${code}<span>${url}</span></div>`;
-        }
+          return `<div class="check-item ${cls}">${code}<span>${label}</span></div>`;
+        };
+        for (const item of shown) itemsHtml += renderItem(item);
         if (hidden.length > 0) {
           const moreId = `more-${id}`;
           itemsHtml += `<div id="${moreId}" style="display:none">`;
-          for (const item of hidden) {
-            const url = item.url || item.email || item.wrong_domain || JSON.stringify(item);
-            const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
-            itemsHtml += `<div class="check-item ${cls}">${code}<span>${url}</span></div>`;
-          }
+          for (const item of hidden) itemsHtml += renderItem(item);
           itemsHtml += `</div><span class="check-items-toggle" onclick="document.getElementById('${moreId}').style.display='flex';document.getElementById('${moreId}').style.flexDirection='column';document.getElementById('${moreId}').style.gap='4px';this.style.display='none'">▾ Show ${hidden.length} more</span>`;
         }
         itemsHtml += '</div>';
