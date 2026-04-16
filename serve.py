@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import AsyncGenerator, Dict, Any
 
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -30,7 +31,7 @@ from link_checker import run_link_check
 from policy_scraper import run_policy_checks
 from product_checker import run_product_checks
 from image_checker import run_image_checks
-from database import init_db, save_scan, get_recent_scans, get_scan_by_id, get_scans_for_domain
+from database import init_db, save_scan, save_lead, get_leads, get_recent_scans, get_scan_by_id, get_scans_for_domain
 
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -81,6 +82,21 @@ async def scan_detail(scan_id: int):
 @app.get("/api/history/domain/{domain}")
 async def domain_history(domain: str, limit: int = 10):
     return {"scans": get_scans_for_domain(domain, limit)}
+
+
+class LeadIn(BaseModel):
+    email: str
+    scan_id: int = -1
+    url: str = ""
+
+@app.post("/api/leads")
+async def submit_lead(lead: LeadIn):
+    save_lead(lead.email, lead.scan_id, lead.url)
+    return {"ok": True}
+
+@app.get("/api/leads")
+async def list_leads(limit: int = 100):
+    return {"leads": get_leads(limit)}
 
 
 def ensure_url(url: str) -> str:

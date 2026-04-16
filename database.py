@@ -22,6 +22,16 @@ def get_conn() -> sqlite3.Connection:
 def init_db():
     with get_conn() as conn:
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS leads (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                email       TEXT NOT NULL,
+                scan_id     INTEGER,
+                url         TEXT,
+                created_at  TEXT NOT NULL
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_leads_email ON leads(email)")
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS scans (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 domain      TEXT NOT NULL,
@@ -37,6 +47,33 @@ def init_db():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_scans_domain ON scans(domain)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_scans_scanned_at ON scans(scanned_at)")
         conn.commit()
+
+
+def save_lead(email: str, scan_id: int, url: str) -> int:
+    now = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        with get_conn() as conn:
+            cur = conn.execute(
+                "INSERT INTO leads (email, scan_id, url, created_at) VALUES (?, ?, ?, ?)",
+                (email.lower().strip(), scan_id, url, now),
+            )
+            conn.commit()
+            return cur.lastrowid
+    except Exception as e:
+        print(f"[DB] save_lead failed: {e}")
+        return -1
+
+
+def get_leads(limit: int = 100) -> list[dict]:
+    try:
+        with get_conn() as conn:
+            rows = conn.execute(
+                "SELECT id, email, scan_id, url, created_at FROM leads ORDER BY id DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
+    except Exception:
+        return []
 
 
 def save_scan(url: str, score: dict, result: dict) -> int:

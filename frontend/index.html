@@ -572,7 +572,7 @@ function startScan() {
       const idx = steps.indexOf(data.step);
       if (idx < steps.length - 1) setStepRunning(steps[idx + 1]);
     }
-    if (data.type === 'complete') { eventSource.close(); finishProgress(() => showResults(data.report, url)); }
+    if (data.type === 'complete') { eventSource.close(); finishProgress(() => { hasUnlocked() ? showResults(data.report, url) : showEmailGate(data.report, url); }); }
     if (data.type === 'error') { eventSource.close(); showError(data.message || 'Scan failed'); }
   };
   eventSource.onerror = () => { eventSource.close(); showError('Connection lost. Please try again.'); };
@@ -587,6 +587,154 @@ function showError(msg) {
   const b = document.getElementById('errorBanner');
   b.textContent = '⚠ ' + msg; b.classList.add('visible');
   document.getElementById('scanBtn').disabled = false;
+}
+
+function showEmailGate(report, url) {
+  document.getElementById('progressSection').classList.remove('visible');
+  document.getElementById('scanBtn').disabled = false;
+
+  const score = report.score || {};
+  const pct = score.score_pct || 0;
+  const failed = score.failed || 0;
+  const warnings = score.warnings || 0;
+  const domain = url.replace('https://','').replace('http://','').split('/')[0];
+  const isHighRisk = pct < 60;
+  const riskLabel = pct >= 80 ? 'Low Risk' : pct >= 60 ? 'Medium Risk' : 'HIGH RISK';
+  const riskColor = pct >= 80 ? '#00C96B' : pct >= 60 ? '#FFB800' : '#FF453A';
+
+  // Remove existing gate if any
+  document.getElementById('emailGate')?.remove();
+
+  const gate = document.createElement('div');
+  gate.id = 'emailGate';
+  gate.style.cssText = `
+    position:fixed;inset:0;z-index:1000;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+    background:rgba(5,5,10,0.85);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  `;
+
+  gate.innerHTML = `
+    <div style="
+      max-width:480px;width:100%;
+      background:linear-gradient(160deg,#0d1117 0%,#0a0f0a 100%);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:24px;padding:36px 32px;
+      box-shadow:0 40px 80px rgba(0,0,0,0.6),0 0 0 1px rgba(255,69,58,0.15);
+      text-align:center;position:relative;overflow:hidden;
+    ">
+      <!-- Ambient glow -->
+      <div style="position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:200px;height:200px;background:radial-gradient(circle,rgba(255,69,58,0.12) 0%,transparent 70%);pointer-events:none;"></div>
+
+      <!-- Risk badge -->
+      <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,69,58,0.1);border:1px solid rgba(255,69,58,0.25);border-radius:99px;padding:6px 14px;font-size:0.72rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#FF453A;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#FF453A;display:inline-block;animation:blink 1.2s infinite;"></span>
+        ${riskLabel} · Scan Complete
+      </div>
+
+      <!-- Score reveal -->
+      <div style="margin-bottom:10px;">
+        <div style="font-size:4rem;font-weight:800;line-height:1;color:${riskColor};letter-spacing:-2px;">${Math.round(pct)}%</div>
+        <div style="font-size:0.85rem;color:rgba(255,255,255,0.4);margin-top:6px;">GMC Compliance Score for <strong style="color:rgba(255,255,255,0.7);">${domain}</strong></div>
+      </div>
+
+      <!-- Issue counts — the stress triggers -->
+      <div style="display:flex;gap:10px;justify-content:center;margin:20px 0;">
+        <div style="flex:1;background:rgba(255,69,58,0.08);border:1px solid rgba(255,69,58,0.2);border-radius:12px;padding:12px 8px;">
+          <div style="font-size:1.6rem;font-weight:800;color:#FF453A;line-height:1;">${failed}</div>
+          <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;">Critical<br>Issues</div>
+        </div>
+        <div style="flex:1;background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.2);border-radius:12px;padding:12px 8px;">
+          <div style="font-size:1.6rem;font-weight:800;color:#FFB800;line-height:1;">${warnings}</div>
+          <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;">Warnings<br>Found</div>
+        </div>
+        <div style="flex:1;background:rgba(0,201,107,0.08);border:1px solid rgba(0,201,107,0.2);border-radius:12px;padding:12px 8px;">
+          <div style="font-size:1.6rem;font-weight:800;color:#00C96B;line-height:1;">${score.passed||0}</div>
+          <div style="font-size:0.68rem;color:rgba(255,255,255,0.4);margin-top:3px;text-transform:uppercase;letter-spacing:0.5px;">Checks<br>Passed</div>
+        </div>
+      </div>
+
+      <!-- Fear copy -->
+      <p style="font-size:0.9rem;color:rgba(255,255,255,0.55);line-height:1.6;margin-bottom:22px;">
+        ${failed > 0
+          ? `Your store has <strong style="color:#FF453A;">${failed} issue${failed>1?'s':''}</strong> that can trigger a GMC suspension. Enter your email to see exactly what to fix.`
+          : `Your store has <strong style="color:#FFB800;">${warnings} warning${warnings>1?'s':''}</strong> that put your GMC account at risk. Enter your email to get the full report.`
+        }
+      </p>
+
+      <!-- Email form -->
+      <div id="gateFormWrap">
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <input id="gateEmail" type="email" placeholder="your@email.com" style="
+            flex:1;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+            border-radius:10px;padding:12px 14px;color:#fff;font-size:0.88rem;
+            font-family:Inter,sans-serif;outline:none;
+            transition:border-color 0.2s;
+          " onfocus="this.style.borderColor='rgba(0,201,107,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'" onkeydown="if(event.key==='Enter')submitGateEmail('${report.scan_id}')"/>
+          <button onclick="submitGateEmail(${report.scan_id})" style="
+            background:#00C96B;color:#000;font-weight:700;font-size:0.85rem;
+            border:none;border-radius:10px;padding:12px 18px;cursor:pointer;
+            white-space:nowrap;transition:opacity 0.2s;font-family:Inter,sans-serif;
+          " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+            See Full Report →
+          </button>
+        </div>
+        <div style="font-size:0.7rem;color:rgba(255,255,255,0.2);">No spam. One email. Full report unlocked instantly.</div>
+      </div>
+
+      <!-- Success state (hidden) -->
+      <div id="gateSuccess" style="display:none;color:#00C96B;font-size:0.9rem;font-weight:600;padding:10px;">
+        ✓ Unlocking your report...
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(gate);
+
+  // Store report for after gate
+  window._pendingReport = report;
+  window._pendingUrl = url;
+}
+
+async function submitGateEmail(scanId) {
+  const email = document.getElementById('gateEmail')?.value?.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('gateEmail').style.borderColor = 'rgba(255,69,58,0.6)';
+    return;
+  }
+
+  // Save email to localStorage so gate doesn't show again on this device
+  try {
+    const saved = JSON.parse(localStorage.getItem('gmc_unlocked') || '[]');
+    saved.push({ email, ts: Date.now() });
+    localStorage.setItem('gmc_unlocked', JSON.stringify(saved));
+  } catch(e) {}
+
+  // Submit to backend
+  try {
+    await fetch('/api/leads', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, scan_id: scanId, url: window._pendingUrl })
+    });
+  } catch(e) {}
+
+  document.getElementById('gateFormWrap').style.display = 'none';
+  document.getElementById('gateSuccess').style.display = 'block';
+
+  setTimeout(() => {
+    document.getElementById('emailGate')?.remove();
+    showResults(window._pendingReport, window._pendingUrl);
+  }, 800);
+}
+
+function hasUnlocked() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('gmc_unlocked') || '[]');
+    return saved.length > 0;
+  } catch(e) { return false; }
 }
 
 function showResults(report, url) {
