@@ -40,7 +40,7 @@ CHECK_WEIGHTS = {
     "Refund policy completeness":   3,   # GMC required
     "Customer service hours":       2,
     "Empty collections":            2,
-    "Products per collection (5–10)": 1, # Advisory
+    "Products per collection (min. 5)": 1, # Advisory
     "Duplicate product images":     2,
 }
 DEFAULT_WEIGHT = 1
@@ -143,18 +143,18 @@ def extract_all_checks(results: dict) -> list[dict]:
         col_status = "FAIL" if any(c["status"] == "FAIL" for c in col_results) else \
                      "WARNING" if non_pass else "PASS"
         checks.append({
-            "name": "Products per collection (5–10)",
+            "name": "Products per collection (min. 5)",
             "category": "Products",
             "status": col_status,
             "explanation": (
-                f"{len(non_pass)} of {len(col_results)} collection(s) outside the 5-10 range."
+                f"{len(non_pass)} of {len(col_results)} collection(s) below the 5-product minimum."
                 if non_pass else
-                f"Alle {len(col_results)} collectie(s) hebben 5–10 producten."
+                f"All {len(col_results)} collection(s) meet the minimum of 5 products."
             ),
             "details": non_pass,
         })
     else:
-        checks.append({"name": "Products per collection (5–10)", "category": "Products",
+        checks.append({"name": "Products per collection (min. 5)", "category": "Products",
                        "status": "WARNING", "explanation": "No collections found."})
 
     # Image check

@@ -186,18 +186,17 @@ async def check_collection(client, base_url, collection, api_key=None) -> dict:
 
     if count is None:
         return {**collection, "product_count": None, "status": "WARNING",
-                "explanation": "Productaantal niet te bepalen.", "method": method}
+                "explanation": "Could not determine product count.", "method": method}
 
     if count == 0:
         status = "FAIL"
-        explanation = "Lege collectie — 0 producten. GMC kan lege collecties penaliseren."
+        explanation = "Empty collection — 0 products. GMC may penalise empty collections."
     elif count < MIN_PRODUCTS:
         status = "WARNING"
-        explanation = (f"{count} product(en). Minimaal {MIN_PRODUCTS} recommended for a "
-                       "gevulde collectie die GMC reviewers overtuigt.")
+        explanation = (f"{count} product(s). Minimum {MIN_PRODUCTS} products required.")
     else:
         status = "PASS"
-        explanation = f"{count} products — meets the minimum requirement of {MIN_PRODUCTS}."
+        explanation = f"{count} products — meets the minimum of {MIN_PRODUCTS}."
 
     return {**collection, "product_count": count, "status": status,
             "explanation": explanation, "method": method}
@@ -265,7 +264,7 @@ async def run_product_checks(store_url: str, scraperapi_key: str | None = None) 
 
         empty_status = "FAIL" if empty else "PASS"
         empty_explanation = (
-            f"{len(empty)} lege collectie(s): " + ", ".join(c["title"] for c in empty)
+            f"{len(empty)} empty collection(s): " + ", ".join(c["title"] for c in empty)
             if empty else "No empty collections."
         )
 
