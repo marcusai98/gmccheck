@@ -1,5 +1,20 @@
 import asyncio
 import json
+import math
+
+class SafeEncoder(json.JSONEncoder):
+    """Convert numpy/non-standard types to JSON-safe Python types."""
+    def default(self, obj):
+        try:
+            import numpy as np
+            if isinstance(obj, (np.integer,)): return int(obj)
+            if isinstance(obj, (np.floating,)): return float(obj)
+            if isinstance(obj, np.ndarray): return obj.tolist()
+        except ImportError:
+            pass
+        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+            return None
+        return super().default(obj)
 from pathlib import Path
 from typing import AsyncGenerator, Dict, Any
 
@@ -112,7 +127,7 @@ async def stream_scan(url: str):
 
     async def event_publisher() -> AsyncGenerator[Dict[str, str], None]:
         async for event in scan_steps(store_url):
-            yield {"data": json.dumps(event)}
+            yield {"data": json.dumps(event, cls=SafeEncoder)}
 
     headers = {
         "Cache-Control": "no-cache",
