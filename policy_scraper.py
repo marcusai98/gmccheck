@@ -338,6 +338,94 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
     }
 
 
+PRIVACY_PATHS = ["/policies/privacy-policy", "/pages/privacy-policy", "/privacy-policy", "/privacy", "/pages/privacy"]
+PRIVACY_CRITICAL = ["collect", "personal", "data", "information"]
+PRIVACY_RECOMMENDED = ["cookie", "third party", "gdpr", "contact"]
+
+TOS_PATHS = ["/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service", "/terms", "/pages/terms", "/policies/terms"]
+TOS_CRITICAL = ["terms", "agreement", "service"]
+
+ABOUT_PATHS = ["/pages/about-us", "/pages/about", "/about-us", "/about", "/pages/our-story", "/pages/story"]
+CONTACT_CHECK_PATHS = ["/pages/contact", "/pages/contact-us", "/contact", "/contact-us", "/pages/support"]
+FAQ_PATHS = ["/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-questions", "/pages/help"]
+
+
+async def check_privacy_policy(client, base_url, api_key=None) -> dict:
+    html, url = await fetch_first_available(client, base_url, PRIVACY_PATHS, api_key)
+    if not html:
+        return {"status": "FAIL", "url": None,
+                "explanation": "Privacy Policy page not found. GMC requires a privacy policy disclosing data collection."}
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
+    missing_critical = [f for f in PRIVACY_CRITICAL if f not in text]
+    missing_rec = [f for f in PRIVACY_RECOMMENDED if f not in text]
+    if missing_critical:
+        return {"status": "WARNING", "url": url,
+                "explanation": f"Privacy Policy found but missing key content: {', '.join(missing_critical)}."}
+    if missing_rec:
+        return {"status": "WARNING", "url": url,
+                "explanation": f"Privacy Policy present but missing recommended sections: {', '.join(missing_rec)}."}
+    return {"status": "PASS", "url": url,
+            "explanation": "Privacy Policy found with required data collection disclosures."}
+
+
+async def check_terms_of_service(client, base_url, api_key=None) -> dict:
+    html, url = await fetch_first_available(client, base_url, TOS_PATHS, api_key)
+    if not html:
+        return {"status": "WARNING", "url": None,
+                "explanation": "Terms of Service page not found. Recommended by GMC for store credibility."}
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
+    missing = [f for f in TOS_CRITICAL if f not in text]
+    if missing:
+        return {"status": "WARNING", "url": url,
+                "explanation": f"Terms of Service found but appears incomplete (missing: {', '.join(missing)})."}
+    return {"status": "PASS", "url": url,
+            "explanation": "Terms of Service found and contains required content."}
+
+
+async def check_about_us(client, base_url, api_key=None) -> dict:
+    html, url = await fetch_first_available(client, base_url, ABOUT_PATHS, api_key)
+    if not html:
+        return {"status": "WARNING", "url": None,
+                "explanation": "About Us page not found. Adds trust signals for GMC reviewers."}
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+    if len(text.strip()) < 150:
+        return {"status": "WARNING", "url": url,
+                "explanation": "About Us page found but appears very thin (less than 150 chars). Add your story/company info."}
+    return {"status": "PASS", "url": url,
+            "explanation": "About Us page found with sufficient content."}
+
+
+async def check_contact_page(client, base_url, api_key=None) -> dict:
+    html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key)
+    if not html:
+        return {"status": "FAIL", "url": None,
+                "explanation": "Contact page not found. GMC requires a way for customers to reach you."}
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+    emails = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    has_form = bool(re.search(r"<form|<input", html, re.IGNORECASE))
+    if emails:
+        return {"status": "PASS", "url": url,
+                "explanation": f"Contact page found with email address ({emails[0]})."}
+    if has_form:
+        return {"status": "WARNING", "url": url,
+                "explanation": "Contact page found with form but no visible email address. Adding a direct email improves trust."}
+    return {"status": "WARNING", "url": url,
+            "explanation": "Contact page found but no email or form detected."}
+
+
+async def check_faq(client, base_url, api_key=None) -> dict:
+    html, url = await fetch_first_available(client, base_url, FAQ_PATHS, api_key)
+    if not html:
+        return {"status": "WARNING", "url": None,
+                "explanation": "FAQ page not found. Recommended to address shipping/return questions proactively."}
+    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+    if len(text.strip()) < 200:
+        return {"status": "WARNING", "url": url,
+                "explanation": "FAQ page found but appears very thin. Add shipping, return, and delivery questions."}
+    return {"status": "PASS", "url": url,
+            "explanation": "FAQ page found with content."}
+
+
 async def check_customer_service_hours(client, base_url, api_key=None) -> dict:
     html, url = await fetch_first_available(client, base_url, CONTACT_PATHS, api_key)
 
@@ -376,19 +464,25 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
 
     async with httpx.AsyncClient(headers={"User-Agent": HUMAN_UA}, follow_redirects=True) as client:
         try:
-            shipping, duplicate, refund, hours = await asyncio.wait_for(
+            shipping, duplicate, refund, hours, privacy, tos, about, contact, faq = await asyncio.wait_for(
                 asyncio.gather(
                     check_shipping_policy(client, base_url, api_key),
                     check_duplicate_shipping_policy(client, base_url, api_key),
                     check_refund_policy(client, base_url, api_key),
                     check_customer_service_hours(client, base_url, api_key),
+                    check_privacy_policy(client, base_url, api_key),
+                    check_terms_of_service(client, base_url, api_key),
+                    check_about_us(client, base_url, api_key),
+                    check_contact_page(client, base_url, api_key),
+                    check_faq(client, base_url, api_key),
                 ),
                 timeout=90,
             )
         except asyncio.TimeoutError:
-            shipping = duplicate = refund = hours = {**timeout_result}
+            shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = {**timeout_result}
 
-    statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"]]
+    statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"],
+                privacy["status"], tos["status"], about["status"], contact["status"], faq["status"]]
     overall = "FAIL" if "FAIL" in statuses else "WARNING" if "WARNING" in statuses else "PASS"
 
     return {
@@ -399,6 +493,11 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
             "duplicate_shipping": duplicate,
             "refund_policy": refund,
             "customer_service_hours": hours,
+            "privacy_policy": privacy,
+            "terms_of_service": tos,
+            "about_us": about,
+            "contact_page": contact,
+            "faq": faq,
         },
     }
 

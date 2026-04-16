@@ -39,6 +39,11 @@ CHECK_WEIGHTS = {
     "Duplicate shipping policy":    2,
     "Refund policy completeness":   3,   # GMC required
     "Customer service hours":       2,
+    "Privacy Policy":               3,   # GMC required — data collection disclosure
+    "Terms of Service":             2,
+    "About Us":                     1,
+    "Contact page":                 3,   # GMC requires contact info
+    "FAQ page":                     1,
     "Empty collections":            2,
     "Products per collection (min. 5)": 1, # Advisory
     "Duplicate product images":     2,
@@ -128,6 +133,16 @@ def extract_all_checks(results: dict) -> list[dict]:
                    **policy.get("refund_policy", {"status": "ERROR", "explanation": ""})})
     checks.append({"name": "Customer service hours", "category": "Policies",
                    **policy.get("customer_service_hours", {"status": "ERROR", "explanation": ""})})
+    checks.append({"name": "Privacy Policy", "category": "Policies",
+                   **policy.get("privacy_policy", {"status": "ERROR", "explanation": ""})})
+    checks.append({"name": "Terms of Service", "category": "Policies",
+                   **policy.get("terms_of_service", {"status": "ERROR", "explanation": ""})})
+    checks.append({"name": "About Us", "category": "Policies",
+                   **policy.get("about_us", {"status": "ERROR", "explanation": ""})})
+    checks.append({"name": "Contact page", "category": "Policies",
+                   **policy.get("contact_page", {"status": "ERROR", "explanation": ""})})
+    checks.append({"name": "FAQ page", "category": "Policies",
+                   **policy.get("faq", {"status": "ERROR", "explanation": ""})})
 
     # Product checks
     product = results.get("products", {}).get("checks", {})
