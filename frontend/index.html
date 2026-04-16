@@ -815,9 +815,11 @@ function showResults(report, url) {
         const hidden = items.slice(MAX_SHOW);
         itemsHtml = `<div class="check-items" id="${id}">`;
         const renderItem = (item) => {
-          const raw = item.url || item.email || item.wrong_domain || JSON.stringify(item);
-          const isUrl = raw.startsWith('http');
-          const label = isUrl ? `<a href="${raw}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:0.85;">${raw}</a>` : raw;
+          const url = item.url || null;
+          const displayText = item.text || item.email || item.wrong_domain || url || JSON.stringify(item);
+          const label = url
+            ? `<a href="${url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:0.85;">${displayText}</a>`
+            : displayText;
           const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
           return `<div class="check-item ${cls}">${code}<span>${label}</span></div>`;
         };

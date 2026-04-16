@@ -149,7 +149,9 @@ def extract_all_checks(results: dict) -> list[dict]:
     empty = product.get("empty_collections", {})
     checks.append({"name": "Empty collections", "category": "Products",
                    "status": empty.get("status", "ERROR"),
-                   "explanation": empty.get("explanation", "")})
+                   "explanation": empty.get("explanation", ""),
+                   "items": [{"text": i["title"], "url": i["url"]}
+                             for i in empty.get("empty_items", [])]})
 
     # Per-collection checks — summarise as one check
     col_results = product.get("collections", [])
@@ -157,6 +159,7 @@ def extract_all_checks(results: dict) -> list[dict]:
         non_pass = [c for c in col_results if c["status"] != "PASS"]
         col_status = "FAIL" if any(c["status"] == "FAIL" for c in col_results) else \
                      "WARNING" if non_pass else "PASS"
+        thin = product.get("thin_collections", {}).get("items", [])
         checks.append({
             "name": "Products per collection (min. 5)",
             "category": "Products",
@@ -166,7 +169,8 @@ def extract_all_checks(results: dict) -> list[dict]:
                 if non_pass else
                 f"All {len(col_results)} collection(s) meet the minimum of 5 products."
             ),
-            "details": non_pass,
+            "items": [{"text": f"{i['title']} ({i['product_count']} products)", "url": i["url"]}
+                      for i in thin],
         })
     else:
         checks.append({"name": "Products per collection (min. 5)", "category": "Products",
