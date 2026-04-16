@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GMC Admin — Leads & Scans</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080C09; --surface: rgba(255,255,255,0.03); --border: rgba(255,255,255,0.07);
+    --accent: #00C96B; --text: #f0f0f0; --muted: rgba(255,255,255,0.35);
+    --red: #FF453A; --yellow: #FFB800;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+
+  /* ── Login ── */
+  #loginWrap {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; text-align: center;
+  }
+  .login-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+  .login-card p { font-size: 0.82rem; color: var(--muted); margin-bottom: 28px; }
+  .login-card input {
+    width: 100%; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; color: var(--text);
+    font-family: Inter, sans-serif; font-size: 0.9rem; outline: none; margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .login-card input:focus { border-color: rgba(0,201,107,0.5); }
+  .btn {
+    width: 100%; background: var(--accent); color: #000; font-weight: 700;
+    font-size: 0.9rem; border: none; border-radius: 10px; padding: 13px;
+    cursor: pointer; font-family: Inter, sans-serif; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  #loginError { font-size: 0.78rem; color: var(--red); margin-top: 10px; display: none; }
+
+  /* ── Dashboard ── */
+  #dashboard { display: none; }
+  .topbar {
+    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+    padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar-logo { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px; }
+  .topbar-logo span { color: var(--accent); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .logout-btn {
+    font-size: 0.78rem; color: var(--muted); cursor: pointer; background: none; border: none;
+    font-family: Inter, sans-serif; transition: color 0.2s;
+  }
+  .logout-btn:hover { color: var(--text); }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  /* Stats row */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .stat-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.red { color: var(--red); }
+  .stat-value.yellow { color: var(--yellow); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; }
+  .tab { padding: 8px 18px; font-size: 0.82rem; font-weight: 600; border-radius: 9px; cursor: pointer; color: var(--muted); transition: all 0.15s; border: none; background: none; font-family: Inter, sans-serif; }
+  .tab.active { background: rgba(255,255,255,0.07); color: var(--text); }
+
+  /* Table */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .table-header {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-title { font-size: 0.82rem; font-weight: 600; }
+  .table-count { font-size: 0.75rem; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left; padding: 11px 20px;
+    font-size: 0.68rem; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+    color: var(--muted); border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);
+  }
+  td { padding: 12px 20px; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 0.68rem; font-weight: 700; }
+  .badge-pass { background: rgba(0,201,107,0.1); color: #00C96B; }
+  .badge-warn { background: rgba(255,184,0,0.1); color: #FFB800; }
+  .badge-fail { background: rgba(255,69,58,0.1); color: #FF453A; }
+  .score-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  a.store-link { color: var(--accent); text-decoration: none; font-size: 0.78rem; }
+  a.store-link:hover { text-decoration: underline; }
+  .empty-state { padding: 48px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+
+  /* Export btn */
+  .export-btn {
+    font-size: 0.75rem; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    color: var(--text); padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    font-family: Inter, sans-serif; transition: background 0.2s;
+  }
+  .export-btn:hover { background: rgba(255,255,255,0.08); }
+
+  .refresh-btn { font-size: 0.72rem; color: var(--muted); cursor: pointer; background: none; border: none; font-family: Inter, sans-serif; }
+  .refresh-btn:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="loginWrap">
+  <div class="login-card">
+    <div style="font-size:2rem;margin-bottom:12px;">🛡</div>
+    <h2>Admin Access</h2>
+    <p>AI GMC Compliance Scan — internal dashboard</p>
+    <input type="password" id="pwInput" placeholder="Password" onkeydown="if(event.key==='Enter')login()"/>
+    <button class="btn" onclick="login()">Sign In</button>
+    <div id="loginError">Incorrect password</div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-logo">🛡 <span>GMC Admin</span></div>
+    <div class="topbar-right">
+      <span style="font-size:0.75rem;color:var(--muted);" id="lastRefresh"></span>
+      <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-value green" id="statLeads">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Scans</div><div class="stat-value" id="statScans">—</div></div>
+      <div class="stat-card"><div class="stat-label">Unique Domains</div><div class="stat-value" id="statDomains">—</div></div>
+      <div class="stat-card"><div class="stat-label">High Risk Stores</div><div class="stat-value red" id="statHighRisk">—</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Score</div><div class="stat-value yellow" id="statAvg">—</div></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('leads', this)">Leads</button>
+      <button class="tab" onclick="showTab('scans', this)">All Scans</button>
+    </div>
+
+    <!-- Leads table -->
+    <div id="tabLeads" class="table-wrap">
+      <div class="table-header">
+        <div class="table-title">Email leads</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="table-count" id="leadsCount"></span>
+          <button class="export-btn" onclick="exportCSV('leads')">↓ Export CSV</button>
+        </div>
+      </div>
+      <div id="leadsBody"></div>
+    </div>
+
+    <!-- Scans table -->
+    <div id="tabScans" class="table-wrap" style="display:none;">
+      <div class="table-header">
+        <div class="table-title">All scans</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="table-count" id="scansCount"></span>
+          <button class="export-btn" onclick="exportCSV('scans')">↓ Export CSV</button>
+        </div>
+      </div>
+      <div id="scansBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PW = 'Ic@rus2026!GMC';
+let _leads = [], _scans = [];
+
+function login() {
+  const pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('gmc_admin', '1');
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('gmc_admin');
+  location.reload();
+}
+
+if (sessionStorage.getItem('gmc_admin')) {
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+}
+
+function showTab(name, btn) {
+  document.getElementById('tabLeads').style.display = name === 'leads' ? 'block' : 'none';
+  document.getElementById('tabScans').style.display  = name === 'scans'  ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function loadData() {
+  try {
+    const [lr, sr] = await Promise.all([
+      fetch('/api/leads?limit=500').then(r => r.json()),
+      fetch('/api/history?limit=500').then(r => r.json()),
+    ]);
+    _leads = lr.leads || [];
+    _scans = sr.scans || [];
+    renderStats();
+    renderLeads();
+    renderScans();
+    document.getElementById('lastRefresh').textContent = 'Updated ' + new Date().toLocaleTimeString('en-GB');
+  } catch(e) {
+    console.error(e);
+  }
+}
+
+function renderStats() {
+  document.getElementById('statLeads').textContent = _leads.length;
+  document.getElementById('statScans').textContent = _scans.length;
+  const domains = new Set(_scans.map(s => s.domain));
+  document.getElementById('statDomains').textContent = domains.size;
+  const highRisk = _scans.filter(s => (s.score_pct || 0) < 60).length;
+  document.getElementById('statHighRisk').textContent = highRisk;
+  const avg = _scans.length ? (_scans.reduce((a,s) => a + (s.score_pct||0), 0) / _scans.length).toFixed(1) : '—';
+  document.getElementById('statAvg').textContent = avg !== '—' ? avg + '%' : '—';
+  document.getElementById('leadsCount').textContent = _leads.length + ' leads';
+  document.getElementById('scansCount').textContent = _scans.length + ' scans';
+}
+
+function scoreClass(pct) { return pct >= 80 ? 'pass' : pct >= 60 ? 'warn' : 'fail'; }
+function scoreColor(pct) { return pct >= 80 ? '#00C96B' : pct >= 60 ? '#FFB800' : '#FF453A'; }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function renderLeads() {
+  const el = document.getElementById('leadsBody');
+  if (!_leads.length) { el.innerHTML = '<div class="empty-state">No leads yet. Share the tool to start collecting emails.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Email</th><th>Store</th><th>Score</th><th>Date</th>
+    </tr></thead>
+    <tbody>${_leads.map((l,i) => {
+      const scan = _scans.find(s => s.id === l.scan_id);
+      const pct = scan?.score_pct ?? null;
+      const domain = l.url ? l.url.replace('https://','').replace('http://','').split('/')[0] : '—';
+      return `<tr>
+        <td style="color:var(--muted);font-size:0.75rem;">${_leads.length - i}</td>
+        <td style="font-weight:500;">${l.email}</td>
+        <td><a class="store-link" href="${l.url || '#'}" target="_blank">${domain}</a></td>
+        <td>${pct !== null ? `<span class="badge badge-${scoreClass(pct)}">${Math.round(pct)}%</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+        <td style="color:var(--muted);font-size:0.78rem;">${fmtDate(l.created_at)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function renderScans() {
+  const el = document.getElementById('scansBody');
+  if (!_scans.length) { el.innerHTML = '<div class="empty-state">No scans yet.</div>'; return; }
+  el.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Domain</th><th>Score</th><th>Pass</th><th>Fail</th><th>Warn</th><th>Date</th>
+    </tr></thead>
+    <tbody>${_scans.map((s,i) => {
+      const pct = s.score_pct ?? 0;
+      return `<tr>
+        <td style="color:var(--muted);font-size:0.75rem;">${s.id}</td>
+        <td><a class="store-link" href="${s.url}" target="_blank">${s.domain}</a></td>
+        <td><span class="score-dot" style="background:${scoreColor(pct)}"></span><strong style="color:${scoreColor(pct)}">${Math.round(pct)}%</strong></td>
+        <td style="color:#00C96B;font-weight:600;">${s.passed||0}</td>
+        <td style="color:#FF453A;font-weight:600;">${s.failed||0}</td>
+        <td style="color:#FFB800;font-weight:600;">${s.warnings||0}</td>
+        <td style="color:var(--muted);font-size:0.78rem;">${fmtDate(s.scanned_at)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function exportCSV(type) {
+  let rows, headers, filename;
+  if (type === 'leads') {
+    headers = ['Email','Store URL','Domain','Score %','Date'];
+    rows = _leads.map(l => {
+      const scan = _scans.find(s => s.id === l.scan_id);
+      const domain = l.url ? l.url.replace('https://','').replace('http://','').split('/')[0] : '';
+      return [l.email, l.url||'', domain, scan?.score_pct ?? '', l.created_at];
+    });
+    filename = 'gmc-leads.csv';
+  } else {
+    headers = ['ID','Domain','URL','Score %','Passed','Failed','Warnings','Date'];
+    rows = _scans.map(s => [s.id, s.domain, s.url, s.score_pct, s.passed, s.failed, s.warnings, s.scanned_at]);
+    filename = 'gmc-scans.csv';
+  }
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = filename; a.click();
+}
+</script>
+</body>
+</html>

@@ -65,6 +65,10 @@ async def serve_frontend() -> FileResponse:
 async def healthcheck() -> Dict[str, str]:
     return {"status": "ok"}
 
+@app.get("/admin", response_class=FileResponse)
+async def admin_page() -> FileResponse:
+    return FileResponse(FRONTEND_DIR / "admin.html")
+
 
 @app.get("/api/history")
 async def history(limit: int = 20):
