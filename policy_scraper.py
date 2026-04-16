@@ -854,7 +854,13 @@ async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
     for link in links:
         href = (link.get("href") or "").lower()
         text = link.get_text(strip=True).lower()
-        if any(kw in href or kw in text for kw in ["refund", "return", "retour", "terugkeer"]):
+        if any(kw in href or kw in text for kw in [
+            "refund", "return", "retour", "terugkeer",          # EN/NL
+            "rückgabe", "erstattung", "ruckkehr", "ruckgabe",   # DE
+            "remboursement", "retourner",                        # FR
+            "devolución", "devolucion",                          # ES
+            "retoure", "widerruf",                               # DE alt
+        ]):
             return {"status": "PASS", "url": base_url,
                     "explanation": f"Return/refund policy linked in footer (\"{link.get_text(strip=True)}\")."}
 
