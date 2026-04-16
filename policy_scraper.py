@@ -416,7 +416,8 @@ NAV_KEYWORDS = {
     "faq":      ["faq", "frequently", "häufig", "questions", "help", "hilfe"],
 }
 
-_nav_cache: dict = {}  # base_url → discovered links (per request lifetime)
+_nav_cache: dict = {}        # base_url → discovered page paths
+_page_cache: dict = {}      # full_url → html content (pre-fetched before gather)
 
 
 PAGE_CATEGORY_KEYWORDS = {
@@ -504,13 +505,26 @@ async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
 
 
 async def fetch_first_available(client, base_url, paths, api_key=None, nav_category=None):
-    # Try nav-discovered URL first (works for any language store)
+    """Fetch first available page. Uses pre-fetched page cache to avoid duplicate requests."""
+
+    def _get_cached(url: str):
+        return _page_cache.get(url)
+
+    async def _fetch_with_cache(url: str):
+        if url in _page_cache:
+            return _page_cache[url]
+        html = await fetch_page(client, url, api_key)
+        if html:
+            _page_cache[url] = html
+        return html
+
+    # Try nav-discovered URL first
     if nav_category:
         nav = await discover_nav_pages(client, base_url, api_key)
         discovered_path = nav.get(nav_category)
         if discovered_path:
             url = base_url + discovered_path
-            html = await fetch_page(client, url, api_key)
+            html = _get_cached(url) or await _fetch_with_cache(url)
             if html:
                 text = BeautifulSoup(html, "html.parser").get_text()
                 if len(text.strip()) > 200:
@@ -519,7 +533,7 @@ async def fetch_first_available(client, base_url, paths, api_key=None, nav_categ
     # Fall back to predefined paths
     for path in paths:
         url = base_url + path
-        html = await fetch_page(client, url, api_key)
+        html = _get_cached(url) or await _fetch_with_cache(url)
         if html:
             text = BeautifulSoup(html, "html.parser").get_text()
             if len(text.strip()) > 200:
@@ -952,6 +966,28 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
         # Populate cache so all checks reuse it
         _nav_cache[base_url] = nav_pages
 
+        # Pre-fetch all discovered pages in parallel — eliminates duplicate requests
+        # Stores that return 429 will go through ScraperAPI once per URL, not 13 times
+        if nav_pages:
+            fetch_tasks = [
+                fetch_page(client, base_url + path, api_key)
+                for path in nav_pages.values()
+                if path.startswith("/")
+            ]
+            # Also pre-fetch homepage for footer/payment checks
+            fetch_tasks.append(fetch_page(client, base_url + "/", api_key))
+            try:
+                results_html = await asyncio.wait_for(
+                    asyncio.gather(*fetch_tasks, return_exceptions=True), timeout=60
+                )
+                # Populate page cache
+                paths_to_prefetch = list(nav_pages.values()) + ["/"]
+                for path, html in zip(paths_to_prefetch, results_html):
+                    if isinstance(html, str) and html:
+                        _page_cache[base_url + path] = html
+            except Exception:
+                pass  # Best effort — checks will fall back to live fetch
+
         try:
             (shipping, duplicate, refund, hours, privacy, tos, about, contact, faq,
              contact_completeness, refund_footer, refund_quality, payment_methods) = await asyncio.wait_for(
@@ -976,8 +1012,11 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
             shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = \
                 contact_completeness = refund_footer = refund_quality = payment_methods = {**timeout_result}
         finally:
-            # Clear cache entry after scan to avoid stale data
+            # Clear cache entries after scan to avoid stale data
             _nav_cache.pop(base_url, None)
+            for url in list(_page_cache.keys()):
+                if base_url in url:
+                    _page_cache.pop(url, None)
 
     statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"],
                 privacy["status"], tos["status"], about["status"], contact["status"], faq["status"],
