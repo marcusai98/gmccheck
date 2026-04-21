@@ -409,7 +409,8 @@ NAV_KEYWORDS = {
     "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto", "contacteer",
                  "reach us", "get in touch", "support", "hilfe"],
     "about":    ["about", "über uns", "uber-uns", "ueber-uns", "qui sommes", "quienes", "over ons",
-                 "notre histoire", "our story", "company"],
+                 "notre histoire", "our story", "company", "story", "brand", "who-we", "who we",
+                 "mission", "team"],
     "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad", "privacybeleid",
                  "cookie", "gdpr"],
     "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden", "nutzungsbedingungen"],
@@ -428,7 +429,8 @@ PAGE_CATEGORY_KEYWORDS = {
     "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto",
                  "contacteer", "reach-us", "get-in-touch", "support"],
     "about":    ["about", "uber-uns", "ueber-uns", "uber_uns", "qui-sommes", "quienes",
-                 "over-ons", "notre-histoire", "our-story"],
+                 "over-ons", "notre-histoire", "our-story", "story", "company", "brand",
+                 "who-we", "mission", "team"],
     "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad",
                  "privacybeleid", "datenschutzrichtlinie", "cookie"],
     "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden",
@@ -680,7 +682,9 @@ PRIVACY_RECOMMENDED = ["cookie", "third party", "gdpr", "contact"]
 TOS_PATHS = ["/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service", "/terms", "/pages/terms", "/policies/terms"]
 TOS_CRITICAL = ["terms", "agreement", "service"]
 
-ABOUT_PATHS = ["/pages/about-us", "/pages/about", "/about-us", "/about", "/pages/our-story", "/pages/story"]
+ABOUT_PATHS = ["/pages/about-us", "/pages/about", "/about-us", "/about", "/pages/our-story", "/pages/story",
+               "/pages/brand", "/pages/our-brand", "/pages/company", "/pages/team", "/pages/mission",
+               "/pages/who-we-are", "/pages/who-we"]
 CONTACT_CHECK_PATHS = ["/pages/contact", "/pages/contact-us", "/contact", "/contact-us", "/pages/support"]
 FAQ_PATHS = ["/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-questions", "/pages/help"]
 
