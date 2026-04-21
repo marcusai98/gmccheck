@@ -502,7 +502,9 @@ async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
             if k not in discovered:
                 discovered[k] = v
 
-    _nav_cache[base_url] = discovered
+    # Only cache if we found something — never cache empty results (avoids stale empty cache on restart)
+    if discovered:
+        _nav_cache[base_url] = discovered
     return discovered
 
 
