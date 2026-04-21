@@ -440,10 +440,13 @@ PAGE_CATEGORY_KEYWORDS = {
 }
 
 
-async def _discover_via_shopify_api(client, base_url) -> dict[str, str]:
-    """Use Shopify /pages.json to get all store pages — works regardless of IP blocking."""
+async def _discover_via_shopify_api(client, base_url, api_key=None) -> dict[str, str]:
+    """Use Shopify /pages.json to get all store pages — falls back to ScraperAPI if blocked."""
     try:
         resp = await client.get(f"{base_url}/pages.json?limit=250", timeout=10)
+        # If blocked (429/403), retry via ScraperAPI
+        if resp.status_code in {429, 403} and api_key:
+            resp = await client.get(scraperapi_url(f"{base_url}/pages.json?limit=250", api_key), timeout=30)
         if resp.status_code != 200:
             return {}
         pages = resp.json().get("pages", [])
@@ -493,7 +496,7 @@ async def discover_nav_pages(client, base_url, api_key=None) -> dict[str, str]:
         return _nav_cache[base_url]
 
     # Primary: Shopify pages.json API (fast, always works, any language)
-    discovered = await _discover_via_shopify_api(client, base_url)
+    discovered = await _discover_via_shopify_api(client, base_url, api_key)
 
     # Fallback: nav scrape (for non-Shopify or if API returns nothing useful)
     if len(discovered) < 3:
@@ -971,12 +974,13 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
         # Pre-fetch nav pages ONCE — prevents 13 concurrent homepage fetches (race condition)
         try:
             nav_pages = await asyncio.wait_for(
-                discover_nav_pages(client, base_url, api_key), timeout=30
+                discover_nav_pages(client, base_url, api_key), timeout=60
             )
         except Exception:
             nav_pages = {}
-        # Populate cache so all checks reuse it
-        _nav_cache[base_url] = nav_pages
+        # Populate cache so all checks reuse it — only if non-empty to avoid poisoning cache
+        if nav_pages:
+            _nav_cache[base_url] = nav_pages
 
         # Pre-fetch all discovered pages in parallel — eliminates duplicate requests
         # Stores that return 429 will go through ScraperAPI once per URL, not 13 times
