@@ -115,8 +115,8 @@ def ensure_url(url: str) -> str:
 async def scan_steps(store_url: str) -> AsyncGenerator[Dict[str, Any], None]:
     steps = [
         ("trust",    run_trust_checks,   75),
+        ("policies", run_policy_checks,  160),  # policies before links — avoid Cloudflare ban from link checker
         ("links",    run_link_check,      120),
-        ("policies", run_policy_checks,  160),
         ("products", run_product_checks, 100),
         ("images",   run_image_checks,    70),
     ]
