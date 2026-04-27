@@ -200,13 +200,13 @@ async def run_scamadviser_check(store_url: str, scraperapi_key: str | None = Non
 
     if score < SCORE_FAIL:
         status_label = "FAIL"
-        explanation = f"ScamAdviser score {score}/100 — hoog risico. GMC kan deze store afwijzen."
+        explanation = f"ScamAdviser score {score}/100 — high risk. GMC may reject this store."
     elif score < SCORE_WARNING:
         status_label = "WARNING"
-        explanation = f"ScamAdviser score {score}/100 — matig risico. GMC reviewers kunnen markeren."
+        explanation = f"ScamAdviser score {score}/100 — moderate risk. GMC reviewers may flag this."
     else:
         status_label = "PASS"
-        explanation = f"ScamAdviser score {score}/100 — geen grote bezorgdheden."
+        explanation = f"ScamAdviser score {score}/100 — no major concerns."
 
     if risk_factors:
         explanation += f" Risk factors: {', '.join(risk_factors)}."
@@ -223,5 +223,5 @@ if __name__ == "__main__":
     print(f"\nScamAdviser: {url}  |  Key: {'ja' if key else 'NIET INGESTELD'}\n{'─'*46}")
     r = asyncio.run(run_scamadviser_check(url, scraperapi_key=key))
     print(f"Status: {r['status']}  |  Score: {r['score']}/100  |  Method: {r.get('fetch_method')}")
-    print(f"Uitleg: {r['explanation']}")
+    print(f"Explanation: {r['explanation']}")
 
