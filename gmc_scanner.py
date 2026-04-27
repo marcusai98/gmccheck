@@ -50,7 +50,6 @@ CHECK_WEIGHTS = {
     "Payment methods visible":      1,   # Trust signal
     "Empty collections":            2,
     "Products per collection (min. 5)": 1, # Advisory
-    "Duplicate product images":     2,
 }
 DEFAULT_WEIGHT = 1
 
@@ -215,11 +214,7 @@ def extract_all_checks(results: dict) -> list[dict]:
         checks.append({"name": "Products per collection (min. 5)", "category": "Products",
                        "status": "WARNING", "explanation": "No collections found."})
 
-    # Image check
-    images = results.get("images", {})
-    checks.append({"name": "Duplicate product images", "category": "Products",
-                   "status": images.get("status", "ERROR"),
-                   "explanation": images.get("explanation", "")})
+    # Duplicate product images check removed
 
     return checks
 
@@ -318,12 +313,12 @@ async def run_full_scan(store_url: str) -> dict:
     print("Fase 1: Trust + Links + Policies + Products parallel uitvoeren...")
 
     # Run all 5 check groups in parallel
-    trust, links, policies, products, images = await asyncio.gather(
+    trust, links, policies, products = await asyncio.gather(
         run_trust_checks(store_url),
         run_link_check(store_url),
         run_policy_checks(store_url),
         run_product_checks(store_url),
-        run_image_checks(store_url),
+        # run_image_checks disabled,
         return_exceptions=True,
     )
 
@@ -340,7 +335,7 @@ async def run_full_scan(store_url: str) -> dict:
         "links": safe(links, "Links"),
         "policies": safe(policies, "Policies"),
         "products": safe(products, "Products"),
-        "images": safe(images, "Images"),
+        # "images": disabled,
     }
 
     print("Fase 2: Resultaten samenvoegen en rapport opstellen...")
