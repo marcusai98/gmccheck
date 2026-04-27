@@ -165,22 +165,82 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
                 "score": None, "review_count": None, "score_label": None,
                 "present": False, "fetch_method": method}
 
-    # Parse score via JSON-LD
-    rating = find_aggregate_rating(extract_json_ld(html))
+    # Parse score using multiple strategies (Trustpilot changes structure frequently)
+    import re as _re, json as _json
     score = review_count = None
-    if rating:
+
+    # Strategy 1: __NEXT_DATA__ JSON blob — most reliable when present
+    next_data_match = _re.search(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', html, _re.DOTALL)
+    if next_data_match:
         try:
-            score = float(rating.get("ratingValue", 0))
-            review_count = int(str(rating.get("reviewCount", 0)).replace(",", ""))
-        except (ValueError, TypeError):
+            nd = _json.loads(next_data_match.group(1))
+            # Walk the props tree to find businessUnit data
+            def find_trust(obj, depth=0):
+                if depth > 10 or not isinstance(obj, dict): return None, None
+                if "trustScore" in obj:
+                    ts = obj["trustScore"]
+                    nr = None
+                    if "numberOfReviews" in obj:
+                        nr_obj = obj["numberOfReviews"]
+                        nr = nr_obj.get("total") if isinstance(nr_obj, dict) else nr_obj
+                    return float(ts), (int(nr) if nr else None)
+                for v in obj.values():
+                    if isinstance(v, dict):
+                        r, c = find_trust(v, depth+1)
+                        if r: return r, c
+                    elif isinstance(v, list):
+                        for item in v:
+                            if isinstance(item, dict):
+                                r, c = find_trust(item, depth+1)
+                                if r: return r, c
+                return None, None
+            score, review_count = find_trust(nd)
+        except Exception:
             pass
 
+    # Strategy 2: raw regex patterns for trustScore in JS
     if score is None:
-        m = re.search(r"\b([1-5](?:\.\d)?)\s*(?:out of 5|\/5)?", soup.get_text())
-        if m:
-            try: score = float(m.group(1))
-            except ValueError: pass
+        for pat in [r'"trustScore":\s*([0-9]+(?:\.[0-9]+)?)',
+                    r'"score":\s*([0-9]+(?:\.[0-9]+)?)',
+                    r'TrustScore.*?([0-9]+\.[0-9]+)',]:
+            m = _re.search(pat, html)
+            if m:
+                try:
+                    candidate = float(m.group(1))
+                    if 1.0 <= candidate <= 5.0:
+                        score = candidate
+                        break
+                except ValueError:
+                    pass
 
+    # Strategy 3: fallback to JSON-LD AggregateRating (legacy)
+    if score is None:
+        rating = find_aggregate_rating(extract_json_ld(html))
+        if rating:
+            try:
+                score = float(rating.get("ratingValue", 0))
+                if not (1.0 <= score <= 5.0): score = None
+                else:
+                    rc = str(rating.get("reviewCount", 0)).replace(",", "")
+                    review_count = int(rc)
+            except (ValueError, TypeError):
+                pass
+
+    # Review count fallback
+    if review_count is None:
+        for pat in [r'"numberOfReviews".*?"total":\s*([0-9]+)',
+                    r'"reviewCount":\s*([0-9]+)',]:
+            m = _re.search(pat, html)
+            if m:
+                try:
+                    review_count = int(m.group(1))
+                    break
+                except ValueError:
+                    pass
+    
+    if review_count is None:
+        review_count = extract_review_count(soup)
+    
     if review_count is None:
         review_count = extract_review_count(soup)
 
