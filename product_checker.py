@@ -225,7 +225,7 @@ async def check_total_products(client, base_url, api_key=None) -> dict:
     count = len(data.get("products", []))
     return {"total_products": count,
             "status": "PASS" if count > 0 else "FAIL",
-            "explanation": f"Store heeft {count} product(en) in totaal."}
+            "explanation": f"Store has {count} product(s) in total."}
 
 
 # ---------------------------------------------------------------------------
@@ -338,7 +338,7 @@ if __name__ == "__main__":
     key = os.getenv("SCRAPERAPI_KEY")
     print(f"\nProduct checks: {url}\n{'─' * 50}")
     results = asyncio.run(run_product_checks(url, scraperapi_key=key))
-    print(f"Collecties: {results['collections_found']} ({results['discovery_method']})")
+    print(f"Collections: {results['collections_found']} ({results['discovery_method']})")
     print(f"Overall:    {results['overall_product_status']}")
     print(f"Totaal:     {results['checks']['total_products'].get('total_products')} producten")
     print(f"Leeg:       {results['checks']['empty_collections']['count']}")
