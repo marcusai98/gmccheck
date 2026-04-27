@@ -28,7 +28,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 SCORE_FAIL    = 3.0   # < 3.0 → FAIL (harde GMC grens)
-SCORE_WARNING = 3.0   # geen WARNING zone — direct PASS boven 3.0
+SCORE_WARNING = 3.0   # no WARNING zone — direct PASS above 3.0
 MIN_REVIEWS   = 5
 TRUSTPILOT_BASE = "https://www.trustpilot.com/review/"
 HEADERS = {
@@ -176,15 +176,15 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
         status_label, explanation = "WARNING", "Page loaded but score not found. Manual check recommended."
     elif score < SCORE_FAIL:
         status_label = "FAIL"
-        explanation = (f"Score {score:.1f}/5 ({score_label}) — onder de harde grens of 3.0. "
+        explanation = (f"Score {score:.1f}/5 ({score_label}) — below the hard threshold of 3.0. "
             "GMC requires a minimum of 3 stars on Trustpilot.")
     elif review_count is not None and review_count < MIN_REVIEWS:
         status_label = "WARNING"
-        explanation = (f"Score {score:.1f}/5 maar slechts {review_count} review(s) — "
+        explanation = (f"Score {score:.1f}/5 but only {review_count} review(s) — "
             "te weinig reviews voor een betrouwbaar trust signaal.")
     else:
         status_label = "PASS"
-        explanation = (f"Score {score:.1f}/5 ({score_label}) op basis of "
+        explanation = (f"Score {score:.1f}/5 ({score_label}) based on "
             f"{review_count or 'unknown'} reviews — meets the 3.0 threshold.")
 
     return {"domain": domain, "trustpilot_url": tp_url, "status": status_label,
@@ -199,5 +199,5 @@ if __name__ == "__main__":
     print(f"\nTrustpilot: {url}  |  Key: {'ja' if key else 'NIET INGESTELD'}\n{'─'*46}")
     r = asyncio.run(run_trustpilot_check(url, scraperapi_key=key))
     print(f"Status: {r['status']}  |  Score: {r['score']}/5  |  Method: {r.get('fetch_method')}")
-    print(f"Uitleg: {r.get('explanation')}")
+    print(f"Explanation: {r.get('explanation')}")
 
