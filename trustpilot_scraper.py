@@ -143,9 +143,23 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
 
     soup = BeautifulSoup(html, "html.parser")
 
-    # Controleer of pagina bestaat (404)
+    # Controleer of pagina bestaat (404) — uitgebreide detectie
     page_text = soup.get_text().lower()
-    if "page not found" in page_text or ("404" in page_text and len(page_text) < 500):
+    not_found_signals = [
+        "page not found",
+        "be the first to review",
+        "hasn\'t been reviewed",
+        "no reviews yet",
+        "write a review",
+        "this company has not been reviewed",
+    ]
+    is_404 = ("404" in page_text and len(page_text) < 500)
+    is_not_found = any(s in page_text for s in not_found_signals)
+    
+    # Also verify the business page shows the domain we asked for
+    domain_in_page = domain.replace("www.", "") in html.lower()
+    
+    if is_404 or (is_not_found and not domain_in_page):
         return {"domain": domain, "trustpilot_url": tp_url, "status": "WARNING",
                 "explanation": "No Trustpilot page found. Not a FAIL but increases review risk.",
                 "score": None, "review_count": None, "score_label": None,
