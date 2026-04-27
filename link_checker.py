@@ -173,7 +173,8 @@ class LinkCheckResult:
 # ---------------------------------------------------------------------------
 
 def get_store_domain(url):
-    return urlparse(url).netloc.lower().lstrip("www.")
+    netloc = urlparse(url).netloc.lower()
+    return netloc[4:] if netloc.startswith("www.") else netloc
 
 def is_allowed_external(url):
     return any(p in url.lower() for p in ALLOWED_EXTERNAL_PATTERNS)
