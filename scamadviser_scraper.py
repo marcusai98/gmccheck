@@ -44,7 +44,8 @@ HEADERS = {
 def get_domain(url: str) -> str:
     if not url.startswith("http"):
         url = "https://" + url
-    return urlparse(url).netloc.lower().lstrip("www.")
+    netloc = urlparse(url).netloc.lower()
+    return netloc[4:] if netloc.startswith("www.") else netloc
 
 
 def scraperapi_url(target: str, key: str) -> str:
