@@ -174,16 +174,34 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
     if next_data_match:
         try:
             nd = _json.loads(next_data_match.group(1))
-            # Walk the props tree to find businessUnit data
+
+            def _extract_business_unit(obj):
+                """Try known direct paths to businessUnit before falling back to tree walk."""
+                # Trustpilot Next.js structure: props.pageProps.businessUnit
+                try:
+                    bu = (obj.get("props") or {}).get("pageProps") or {}
+                    # Some versions nest it under businessUnit, others put it directly in pageProps
+                    bu_candidate = bu.get("businessUnit") or bu
+                    if "trustScore" in bu_candidate:
+                        return bu_candidate
+                except Exception:
+                    pass
+                return None
+
             def find_trust(obj, depth=0):
-                if depth > 10 or not isinstance(obj, dict): return None, None
+                if depth > 12 or not isinstance(obj, dict): return None, None
                 if "trustScore" in obj:
                     ts = obj["trustScore"]
                     nr = None
                     if "numberOfReviews" in obj:
                         nr_obj = obj["numberOfReviews"]
                         nr = nr_obj.get("total") if isinstance(nr_obj, dict) else nr_obj
-                    return float(ts), (int(nr) if nr else None)
+                    try:
+                        ts_f = float(ts)
+                        if 1.0 <= ts_f <= 5.0:
+                            return ts_f, (int(nr) if nr else None)
+                    except (ValueError, TypeError):
+                        pass
                 for v in obj.values():
                     if isinstance(v, dict):
                         r, c = find_trust(v, depth+1)
@@ -194,15 +212,34 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
                                 r, c = find_trust(item, depth+1)
                                 if r: return r, c
                 return None, None
-            score, review_count = find_trust(nd)
+
+            # Prefer direct businessUnit path — avoids picking up stale/wrong scores
+            # that may appear earlier in a recursive DFS of the full NEXT_DATA blob.
+            bu = _extract_business_unit(nd)
+            if bu:
+                try:
+                    ts_f = float(bu["trustScore"])
+                    if 1.0 <= ts_f <= 5.0:
+                        score = ts_f
+                        nr_obj = bu.get("numberOfReviews", {})
+                        nr = nr_obj.get("total") if isinstance(nr_obj, dict) else nr_obj
+                        review_count = int(nr) if nr else None
+                except (ValueError, TypeError, KeyError):
+                    pass
+
+            # Fallback: recursive tree walk
+            if score is None:
+                score, review_count = find_trust(nd)
         except Exception:
             pass
 
     # Strategy 2: raw regex patterns for trustScore in JS
+    # Note: generic "score" pattern removed — too broad, causes false reads from
+    # product ratings, review scores, or other numeric fields on the page.
     if score is None:
         for pat in [r'"trustScore":\s*([0-9]+(?:\.[0-9]+)?)',
-                    r'"score":\s*([0-9]+(?:\.[0-9]+)?)',
-                    r'TrustScore.*?([0-9]+\.[0-9]+)',]:
+                    r'"TrustScore":\s*([0-9]+(?:\.[0-9]+)?)',
+                    r'(?i)TrustScore[^0-9]{0,30}([0-9]+(?:\.[0-9]+))',]:
             m = _re.search(pat, html)
             if m:
                 try:

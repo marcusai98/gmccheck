@@ -325,15 +325,15 @@ HOURS_PATTERNS = [
 ]
 
 FIELD_LABELS = {
-    "delivery_time": "Levertijd",
-    "shipping_cost": "Verzendkosten",
-    "shipping_countries": "Bestemmingslanden",
-    "order_cutoff": "Besteltijdslimiet",
-    "return_window": "Retourvenster",
-    "return_shipping_cost": "Retourverzendkosten",
-    "refund_processing_time": "Terugbetalingstermijn",
-    "exchange_policy": "Omruilbeleid",
-    "restocking_fee": "Restocking fee",
+    "delivery_time": "Delivery Time",
+    "shipping_cost": "Shipping Cost",
+    "shipping_countries": "Shipping Countries",
+    "order_cutoff": "Order Cutoff / Processing Time",
+    "return_window": "Return Window",
+    "return_shipping_cost": "Return Shipping Cost",
+    "refund_processing_time": "Refund Processing Time",
+    "exchange_policy": "Exchange Policy",
+    "restocking_fee": "Restocking Fee",
 }
 
 
@@ -409,8 +409,10 @@ NAV_KEYWORDS = {
     "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto", "contacteer",
                  "reach us", "get in touch", "support", "hilfe"],
     "about":    ["about", "über uns", "uber-uns", "ueber-uns", "qui sommes", "quienes", "over ons",
-                 "notre histoire", "our story", "company", "story", "brand", "who-we", "who we",
-                 "mission", "team"],
+                 "notre histoire", "our story", "brand story", "the story", "company", "story",
+                 "brand", "who-we", "who we", "mission", "team", "meet ", "the brand",
+                 "unsere geschichte", "unsere-geschichte", "geschichte", "wer wir sind",
+                 "ons verhaal", "nuestra historia", "chi siamo"],
     "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad", "privacybeleid",
                  "cookie", "gdpr"],
     "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden", "nutzungsbedingungen"],
@@ -428,13 +430,28 @@ PAGE_CATEGORY_KEYWORDS = {
                  "lieferung", "versandpolitik", "bezorging"],
     "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto",
                  "contacteer", "reach-us", "get-in-touch", "support"],
-    "about":    ["about", "uber-uns", "ueber-uns", "uber_uns", "qui-sommes", "quienes",
-                 "over-ons", "notre-histoire", "our-story", "story", "company", "brand",
-                 "who-we", "mission", "team"],
+    "about":    [
+                 # English
+                 "about", "our-story", "our story", "brand-story", "brand story",
+                 "the-story", "the story", "story", "company", "brand",
+                 "who-we", "who we", "mission", "team", "meet", "the-brand",
+                 # German
+                 "uber-uns", "ueber-uns", "uber_uns", "unsere-geschichte", "geschichte",
+                 "wer-wir-sind", "unser-unternehmen", "unser-team",
+                 # French
+                 "qui-sommes", "notre-histoire", "notre-equipe", "a-propos",
+                 # Dutch
+                 "over-ons", "ons-verhaal", "wie-zijn-wij",
+                 # Spanish
+                 "quienes", "quienes-somos", "nuestra-historia",
+                 # Italian
+                 "chi-siamo", "la-nostra-storia",
+                 ],
     "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad",
                  "privacybeleid", "datenschutzrichtlinie", "cookie"],
     "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden",
-                 "servicebedingungen", "nutzungsbedingungen"],
+                 "servicebedingungen", "nutzungsbedingungen", "algemene-voorwaarden",
+                 "conditions-generales", "terms-of-use", "terms-and-conditions"],
     "faq":      ["faq", "frequently", "haufig", "häufig", "questions", "help",
                  "hilfe", "veelgestelde"],
 }
@@ -684,12 +701,38 @@ PRIVACY_PATHS = ["/policies/privacy-policy", "/pages/privacy-policy", "/privacy-
 PRIVACY_CRITICAL = ["collect", "personal", "data", "information"]
 PRIVACY_RECOMMENDED = ["cookie", "third party", "gdpr", "contact"]
 
-TOS_PATHS = ["/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service", "/terms", "/pages/terms", "/policies/terms"]
-TOS_CRITICAL = ["terms", "agreement", "service"]
+TOS_PATHS = [
+    "/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service",
+    "/terms", "/pages/terms", "/policies/terms",
+    "/pages/terms-and-conditions", "/pages/terms-conditions", "/pages/termsandconditions",
+    "/pages/terms-of-use", "/pages/conditions-of-use", "/pages/general-conditions",
+    # language variants
+    "/pages/agb", "/pages/nutzungsbedingungen", "/pages/algemene-voorwaarden",
+    "/pages/conditions-generales", "/pages/condiciones",
+]
+# A page qualifies as ToS if it contains at least 2 of these keywords.
+# This handles "Terms and Conditions", "Terms of Use", "General Conditions", etc.
+TOS_KEYWORD_POOL = ["terms", "conditions", "agreement", "service", "use", "policy"]
 
-ABOUT_PATHS = ["/pages/about-us", "/pages/about", "/about-us", "/about", "/pages/our-story", "/pages/story",
-               "/pages/brand", "/pages/our-brand", "/pages/company", "/pages/team", "/pages/mission",
-               "/pages/who-we-are", "/pages/who-we"]
+ABOUT_PATHS = [
+    "/pages/about-us", "/pages/about", "/about-us", "/about",
+    "/pages/our-story", "/pages/story", "/pages/brand-story",
+    "/pages/brand", "/pages/our-brand", "/pages/company", "/pages/team",
+    "/pages/mission", "/pages/our-mission",
+    "/pages/who-we-are", "/pages/who-we",
+    "/pages/meet-us", "/pages/the-brand", "/pages/the-story",
+    # German
+    "/pages/uber-uns", "/pages/ueber-uns", "/pages/unsere-geschichte",
+    "/pages/geschichte", "/pages/wer-wir-sind", "/pages/unser-unternehmen",
+    # French
+    "/pages/a-propos", "/pages/notre-histoire", "/pages/qui-sommes-nous",
+    # Dutch
+    "/pages/over-ons", "/pages/ons-verhaal", "/pages/wie-zijn-wij",
+    # Spanish
+    "/pages/quienes-somos", "/pages/nuestra-historia",
+    # Italian
+    "/pages/chi-siamo",
+]
 CONTACT_CHECK_PATHS = ["/pages/contact", "/pages/contact-us", "/contact", "/contact-us", "/pages/support"]
 FAQ_PATHS = ["/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-questions", "/pages/help"]
 
@@ -716,14 +759,16 @@ async def check_terms_of_service(client, base_url, api_key=None) -> dict:
     html, url = await fetch_first_available(client, base_url, TOS_PATHS, api_key, nav_category="tos")
     if not html:
         return {"status": "WARNING", "url": None,
-                "explanation": "Terms of Service page not found. Recommended by GMC for store credibility."}
+                "explanation": "Terms of Service / Terms and Conditions page not found. Recommended by GMC for store credibility."}
     text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
-    missing = [f for f in TOS_CRITICAL if f not in text]
-    if missing:
+    # Require at least 2 keywords from the pool — this accepts:
+    # "Terms of Service", "Terms and Conditions", "Terms of Use", "General Conditions", etc.
+    found_keywords = [kw for kw in TOS_KEYWORD_POOL if kw in text]
+    if len(found_keywords) < 2:
         return {"status": "WARNING", "url": url,
-                "explanation": f"Terms of Service found but appears incomplete (missing: {', '.join(missing)})."}
+                "explanation": f"Terms page found but content appears very thin (found: {', '.join(found_keywords) or 'none'}). Add your full terms."}
     return {"status": "PASS", "url": url,
-            "explanation": "Terms of Service found and contains required content."}
+            "explanation": "Terms of Service / Terms and Conditions found and contains required content."}
 
 
 async def check_about_us(client, base_url, api_key=None) -> dict:
@@ -789,32 +834,107 @@ PAYMENT_KEYWORDS = [
     "sepa", "przelewy", "diners", "discover",
 ]
 REFUND_CONTENT_SECTIONS = {
-    "cancellation period": [r"\d+\s*(day|dagen|werkdag|business day)", "cancel", "cancellation period", "retourperiode", "retour binnen"],
-    "refund method": ["refund to", "original payment", "store credit", "terugbetaal", "creditcard", "same payment"],
-    "damaged goods": ["damaged", "defective", "incorrect", "wrong item", "beschadigd", "defect", "verkeerd"],
-    "return procedure": ["email", "contact", "form", "portal", "procedure", "how to return", "retour aanvragen", "stap"],
-    "shipping costs": ["shipping cost", "verzendkosten", "postage", "free return", "gratis retour", "at your own cost"],
+    "cancellation period": [
+        # English
+        r"\d+\s*(day|business day)", "cancel", "cancellation period", "return window",
+        r"\d+[-\s]day return", r"within \d+ days",
+        # German
+        "stornierungsfrist", "widerrufsfrist", "rücktrittsrecht", "widerrufsrecht", "widerruf",
+        r"\d+\s*(tag|tage|werktag)", "rückgaberecht", "rückgabefrist",
+        # Dutch
+        "retourperiode", "retour binnen", "retourneer", r"\d+\s*(dag|dagen|werkdag)",
+        # French
+        "délai d'annulation", "délai de rétractation", "annulation",
+        r"\d+\s*jours",
+        # Spanish
+        "plazo de cancelación", "cancelación",
+    ],
+    "refund method": [
+        # English
+        "refund to", "original payment", "store credit", "same payment", "bank transfer",
+        "credited to", "refunded to", "refund via", "refund will",
+        # German
+        "rückerstattungsmethode", "erstattet", "erstattung", "rückzahlung",
+        "erstattet auf", "gutschrift", "auf gleichem weg", "zurücküberwiesen",
+        # Dutch
+        "terugbetaal", "teruggestort", "creditcard", "op dezelfde wijze",
+        # French
+        "remboursement par", "remboursé sur", "crédit",
+        # Spanish
+        "reembolso al", "método de reembolso",
+    ],
+    "damaged goods": [
+        # English
+        "damaged", "defective", "incorrect", "wrong item", "faulty", "broken",
+        # German
+        "beschädigte ware", "beschädigung", "defekt", "beschädigt", "falsche artikel",
+        "fehlerhaft", "mangelhaft", "falsch geliefert",
+        # Dutch
+        "beschadigd", "defect", "verkeerd", "foutief",
+        # French
+        "article endommagé", "défectueux", "article incorrect", "endommagé",
+        # Spanish
+        "artículo dañado", "defectuoso",
+    ],
+    "return procedure": [
+        # English
+        "email", "contact", "form", "portal", "procedure", "how to return",
+        "step", "initiate", "request a return", "start a return",
+        # German
+        "e-mail", "kontaktieren", "formular", "schritt", "rüksendung beantragen",
+        "retoure beantragen", "wende dich",
+        # Dutch
+        "e-mail", "contacteer", "retour aanvragen", "stap",
+        # French
+        "contacter", "formulaire", "étape", "demande de retour",
+        # Spanish
+        "contactar", "formulario", "solicitar devolución",
+    ],
+    "shipping costs": [
+        # English
+        "shipping cost", "postage", "free return", "at your own cost", "return shipping",
+        "return label", "prepaid",
+        # German
+        "versandkosten", "rücksendekosten", "portofrei", "kostenlos zurück",
+        "rückversand", "retourenporto",
+        # Dutch
+        "verzendkosten", "gratis retour", "retourkosten", "terugzendkosten",
+        # French
+        "frais de port", "frais de retour", "retour gratuit", "porté offert",
+        # Spanish
+        "gastos de envío", "devolución gratuita",
+    ],
 }
 
 
+# Regex to detect Google Maps / OSM / Bing map links
+_MAP_LINK_RE = re.compile(
+    r"(maps\.google|google\.com/maps|goo\.gl/maps|maps\.app\.goo|openstreetmap\.org|bing\.com/maps|maps\?q=)",
+    re.IGNORECASE,
+)
+
+
 async def check_contact_info_completeness(client, base_url, api_key=None) -> dict:
-    """Google requires at least 2 of: physical address, phone, email on Contact + Refund pages."""
+    """Google requires at least 2 of: physical address, phone, email on Contact + Refund pages.
+    Also validates that email is a mailto: link and address is linked to a map."""
     html, url = await fetch_first_available(client, base_url, CONTACT_CHECK_PATHS, api_key, nav_category="contact")
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Contact page not found. Google requires physical address, phone, or email."}
 
-    text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
+    soup = BeautifulSoup(html, "html.parser")
+    text = soup.get_text(separator=" ")
 
-    # Check for email
-    emails = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
-    has_email = bool(emails)
+    # ─ Email — text presence + mailto: link
+    emails_in_text = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    has_email = bool(emails_in_text)
+    email_is_linked = bool(soup.find("a", href=re.compile(r"^mailto:", re.I)))
 
-    # Check for phone number
+    # ─ Phone
     phones = PHONE_PATTERN.findall(text)
-    has_phone = bool([p for p in phones if len(re.sub(r'\D', '', p)) >= 7])
+    has_phone = bool([p for p in phones if len(re.sub(r"\D", "", p)) >= 7])
 
-    # Check for physical address
+    # ─ Address — text presence + map hyperlink
     has_address = False
     for kw in ADDRESS_KEYWORDS:
         try:
@@ -825,25 +945,57 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
             if kw.lower() in text.lower():
                 has_address = True
                 break
+    address_is_linked = bool(soup.find("a", href=_MAP_LINK_RE))
 
     found = sum([has_email, has_phone, has_address])
+
+    # Build detail strings with link quality hints
     details = []
-    if has_email: details.append("email ✓")
-    if has_phone: details.append("phone ✓")
-    if has_address: details.append("address ✓")
-    missing = []
-    if not has_email: missing.append("email")
-    if not has_phone: missing.append("phone number")
-    if not has_address: missing.append("physical address")
+    if has_email:
+        details.append("email ✓" + (" (mailto: link)" if email_is_linked else " (plain text — add mailto: link)"))
+    if has_phone:
+        details.append("phone ✓")
+    if has_address:
+        details.append("address ✓" + (" (map link)" if address_is_linked else " (not linked to map)"))
+
+    # Specific missing items — named individually so merchants know exactly what to add
+    missing_specific = []
+    if not has_email:
+        missing_specific.append("Email address missing")
+    if not has_phone:
+        missing_specific.append("Phone number missing")
+    if not has_address:
+        missing_specific.append("Physical address missing")
+
+    # Link-quality warnings (present but not linked properly)
+    link_warnings = []
+    if has_email and not email_is_linked:
+        link_warnings.append("email should be a mailto: hyperlink")
+    if has_address and not address_is_linked:
+        link_warnings.append("address should link to Google Maps or equivalent")
+
+    base_msg = f"{found}/3 contact methods: {', '.join(details)}."
+    if link_warnings:
+        base_msg += f" Recommended improvements: {'; '.join(link_warnings)}."
 
     if found >= 2:
-        return {"status": "PASS", "url": url,
-                "explanation": f"Contact page has {found}/3 required contact methods: {', '.join(details)}."}
+        return {"status": "PASS", "url": url, "explanation": base_msg}
     if found == 1:
-        return {"status": "WARNING", "url": url,
-                "explanation": f"Contact page only has {', '.join(details)}. Google requires at least 2 of: address, phone, email. Missing: {', '.join(missing)}."}
-    return {"status": "FAIL", "url": url,
-            "explanation": f"Contact page missing all required contact info. Add at least 2 of: physical address, phone number, email address."}
+        return {
+            "status": "WARNING", "url": url,
+            "explanation": (
+                f"{base_msg} "
+                f"Google requires at least 2 contact methods. "
+                + " ".join(missing_specific) + "."
+            ),
+        }
+    return {
+        "status": "FAIL", "url": url,
+        "explanation": (
+            "No contact info found on contact page. "
+            "Add at least 2 of: " + ", ".join(missing_specific) + "."
+        ),
+    }
 
 
 async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
@@ -878,7 +1030,9 @@ async def check_refund_in_footer(client, base_url, api_key=None) -> dict:
 
 
 async def check_refund_policy_quality(client, base_url, api_key=None) -> dict:
-    """Check refund policy for required content sections per Google's checklist."""
+    """Check refund policy for required content sections per Google's checklist.
+    Uses language-aware multilingual keyword maps so German/French/etc pages are
+    not falsely flagged for missing English-only terms."""
     html, url = await fetch_first_available(client, base_url, REFUND_PATHS, api_key, nav_category="refund")
     if not html:
         return {"status": "FAIL", "url": None,
@@ -888,10 +1042,22 @@ async def check_refund_policy_quality(client, base_url, api_key=None) -> dict:
     missing_sections = []
 
     for section, patterns in REFUND_CONTENT_SECTIONS.items():
-        found = any(
-            bool(re.search(p, text, re.IGNORECASE) if p.startswith(r'\d') or p.startswith(r'\b') else (p in text))
-            for p in patterns
-        )
+        found = False
+        for p in patterns:
+            try:
+                # Patterns starting with r'\d' or r'\b' or containing special chars are regex
+                if p.startswith(r"\d") or p.startswith(r"\b") or p.startswith(r"\s"):
+                    if re.search(p, text, re.IGNORECASE):
+                        found = True
+                        break
+                elif re.search(re.escape(p) if any(c in p for c in r".+*?[](){}\\") else p,
+                               text, re.IGNORECASE):
+                    found = True
+                    break
+            except re.error:
+                if p.lower() in text:
+                    found = True
+                    break
         if not found:
             missing_sections.append(section)
 
