@@ -844,8 +844,8 @@ function showResults(report, url) {
     <div class="intel-card">
       <div><div class="intel-lbl">Domain Age</div><div class="intel-val">${whois.domain_age_days!=null?whois.domain_age_days+' days':'Unknown'}</div></div>
       <div><div class="intel-lbl">Registrar</div><div class="intel-val">${whois.registrar||'Unknown'}</div></div>
-      <div><div class="intel-lbl">ScamAdviser</div><div class="intel-val">${sa.score!=null?sa.score+'/100':'N/A'}</div></div>
-      <div><div class="intel-lbl">Trustpilot</div><div class="intel-val">${tp.score!=null?tp.score+'/5':'Not found'}</div></div>
+      <div><div class="intel-lbl">ScamAdviser</div><div class="intel-val">${sa.scamadviser_url?`<a href="${sa.scamadviser_url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px">${sa.score!=null?sa.score+'/100':'N/A'}</a>`:(sa.score!=null?sa.score+'/100':'N/A')}</div></div>
+      <div><div class="intel-lbl">Trustpilot</div><div class="intel-val">${tp.trustpilot_url?`<a href="${tp.trustpilot_url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:3px">${tp.score!=null?tp.score+'/5':'Not found'}</a>`:(tp.score!=null?tp.score+'/5':'Not found')}</div></div>
       <div><div class="intel-lbl">Reviews</div><div class="intel-val">${tp.review_count!=null?tp.review_count:'—'}</div></div>
     </div>`;
 
