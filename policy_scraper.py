@@ -127,6 +127,47 @@ SHIPPING_CRITICAL_BY_LANG = {
             r"costes?\s+de\s+envío",
         ],
     },
+    "sv": {
+        "delivery_time": [
+            r"leveranstider?",
+            r"\d+\s*(till|–|-|to)\s*\d+\s*arbetsdagar?",
+            r"\d+\s*arbetsdagar?",
+            r"levereras?\s+(inom|på)\s+\d+",
+            r"hanteringstid",
+            r"transporttid",
+            r"beräknad\s+.*leveranstid",
+            r"leveransområden?",
+        ],
+        "shipping_cost": [
+            r"fraktkostnader?",
+            r"fri\s*frakt",
+            r"gratis\s*frakt",
+            r"fraktavgift",
+            r"standardfraktavgift",
+            r"\d+\s*kr",
+            r"\d+\s*sek",
+            r"fraktvillkor",
+            r"leveransavgift",
+        ],
+    },
+    # Danish (da) — shares many shipping terms with Swedish
+    "da": {
+        "delivery_time": [
+            r"leveringstider?",
+            r"\d+\s*(til|-|to)\s*\d+\s*hverdage",
+            r"\d+\s*hverdage",
+            r"leveringstid",
+            r"forsendelsestid",
+        ],
+        "shipping_cost": [
+            r"fragtomkostninger?",
+            r"gratis\s*fragt",
+            r"gratis\s*forsendelse",
+            r"fragtgebyr",
+            r"\d+\s*kr",
+            r"\d+\s*dkk",
+        ],
+    },
 }
 
 SHIPPING_RECOMMENDED = {
@@ -246,6 +287,41 @@ REFUND_CRITICAL_BY_LANG = {
             r"devolución\s+gratis",
         ],
     },
+    "sv": {
+        "return_window": [
+            r"\d+\s*dagars?\s*(retur|öppet\s*köp|returperiod)",
+            r"ångerrätt",
+            r"returpolicy",
+            r"\d+\s*dagar\s*(efter|från)\s*(leverans|köp|beställning)",
+            r"begara\s+retur\s+.*\d+",
+            r"retur\s+.*\d+\s*dag",
+        ],
+        "return_shipping_cost": [
+            r"returfraktkostnad",
+            r"fraktkostnader\s+(för\s+)?retur",
+            r"fraktkostnad.*retur",
+            r"retur.*fraktkostnad",
+            r"kunden\s+ansvarar",
+            r"fraktkostnaderna\s+är\s+inte",
+            r"\d+\s*(till|–|-)\s*\d+\s*sek.*retur",
+            r"gratis\s+retur",
+            r"returfritt",
+        ],
+    },
+    "da": {
+        "return_window": [
+            r"\d+\s*dages?\s*(returret|returnering|returpolitik)",
+            r"fortrydelsesret",
+            r"returpolitik",
+            r"\d+\s*dage\s*(efter|fra)\s*(levering|køb)",
+        ],
+        "return_shipping_cost": [
+            r"returfragt",
+            r"fragtomkostninger.*retur",
+            r"kunden\s+betaler",
+            r"gratis\s+returnering",
+        ],
+    },
 }
 
 REFUND_RECOMMENDED = {
@@ -270,6 +346,13 @@ REFUND_RECOMMENDED = {
         # French
         r"remboursement.{0,20}(sous|dans|en)\s+\d+\s+jour",
         r"\d+\s+jours?.{0,20}remboursement",
+        # Swedish
+        r"återbetalning.{0,30}\d+\s*arbetsdagar",
+        r"\d+\s*arbetsdagar.{0,30}återbetalning",
+        r"behandlas.{0,20}\d+",
+        # Danish
+        r"refunderet.{0,30}\d+\s*hverdage",
+        r"\d+\s*hverdage.{0,20}tilbagebetaling",
     ],
     "exchange_policy": [
         # English
@@ -283,6 +366,11 @@ REFUND_RECOMMENDED = {
         r"omruil", r"ruilen", r"artikel\s+ruilen",
         # French
         r"échange(r)?", r"article\s+contre",
+        # Swedish
+        r"byta", r"byte", r"byt\s+(storlek|färg|produkt)",
+        r"byta\s+mot", r"byten",
+        # Danish
+        r"ombytning", r"bytte",
     ],
     "restocking_fee": [
         # English
@@ -522,14 +610,16 @@ CONTACT_PATHS       = PAGE_ALIASES["contact"]["paths"]
 # Multilingual privacy check keywords
 PRIVACY_CRITICAL_BY_LANG = {
     # Keywords chosen to match real policy pages reliably.
-    # German/FR/NL/ES/IT use root words that appear regardless of inflection.
-    # Requiring ANY 1 of these missing triggers WARNING (not ALL must be present).
+    # Root words that appear regardless of inflection/case.
     "en": ["collect", "personal", "data", "information"],
-    "de": ["daten", "datenschutz", "personenbezogene"],   # verarbeitung optional — not in all layouts
+    "de": ["daten", "datenschutz", "personenbezogene"],
     "nl": ["gegevens", "persoonsgegevens", "privacy"],
     "fr": ["donnees", "personnelles", "confidentialite"],
     "es": ["datos", "personales", "privacidad"],
     "it": ["dati", "personali", "privacy"],
+    "sv": ["personuppgifter", "integritetspolicy", "dataskydd"],
+    "da": ["personoplysninger", "privatlivspolitik", "databeskyttelse"],
+    "no": ["personopplysninger", "personvernerklaering", "personvern"],
 }
 PRIVACY_RECOMMENDED_BY_LANG = {
     "en": ["cookie", "third party", "gdpr", "contact"],
@@ -546,6 +636,7 @@ _LANG_SIGNATURES = {
     "fr": ["et", "le", "la", "les", "nous", "livraison", "retour", "commande", "paiement"],
     "es": ["y", "el", "la", "los", "envio", "devolucion", "pedido", "pago"],
     "it": ["e", "il", "la", "i", "gli", "spedizione", "reso", "ordine", "pagamento"],
+    "sv": ["och", "att", "det", "som", "för", "leverans", "frakt", "retur", "betalning", "beställning"],
 }
 
 
@@ -556,14 +647,14 @@ def detect_language(html: str) -> str:
     html_tag = soup.find("html")
     if html_tag and html_tag.get("lang"):
         lang = html_tag["lang"].lower().split("-")[0].split("_")[0][:2]
-        if lang in ("en", "de", "nl", "fr", "es", "it", "pt"):
+        if lang in ("en", "de", "nl", "fr", "es", "it", "pt", "sv", "da", "no", "fi"):
             return lang
     # 2. meta tags
     for attr in [{"http-equiv": re.compile("content-language", re.I)}, {"name": re.compile("^language$", re.I)}]:
         meta = soup.find("meta", attrs=attr)
         if meta and meta.get("content"):
             lang = meta["content"].lower().split("-")[0][:2]
-            if lang in ("en", "de", "nl", "fr", "es", "it", "pt"):
+            if lang in ("en", "de", "nl", "fr", "es", "it", "pt", "sv", "da", "no", "fi"):
                 return lang
     # 3. Content heuristic
     words = set(soup.get_text(separator=" ").lower().split())
@@ -890,7 +981,24 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
 
 # A page qualifies as ToS if it contains at least 2 of these keywords.
 # This handles "Terms and Conditions", "Terms of Use", "General Conditions", etc.
-TOS_KEYWORD_POOL = ["terms", "conditions", "agreement", "service", "use", "policy"]
+# A page qualifies as ToS if at least 2 of these keywords are present.
+# Extended to cover Swedish/Nordic and other common ToS terminology.
+TOS_KEYWORD_POOL = [
+    # English
+    "terms", "conditions", "agreement", "service", "use", "policy",
+    # Swedish
+    "villkor", "användarvillkor", "användning",
+    # Danish
+    "betingelser", "vilkår", "købsbetingelser",
+    # German
+    "nutzungsbedingungen", "geschäftsbedingungen", "agb",
+    # Dutch
+    "voorwaarden", "gebruiksvoorwaarden",
+    # French
+    "conditions", "utilisation",
+    # Spanish
+    "términos", "condiciones",
+]
 
 
 async def check_privacy_policy(client, base_url, api_key=None) -> dict:
@@ -998,15 +1106,19 @@ REFUND_CONTENT_SECTIONS = {
         r"\d+\s*(day|business day)", "cancel", "cancellation period", "return window",
         r"\d+[-\s]day return", r"within \d+ days",
         # German
-        "stornierungsfrist", "widerrufsfrist", "rücktrittsrecht", "widerrufsrecht", "widerruf",
+        "stornierungsfrist", "widerrufsfrist", "rüktrittsrecht", "widerrufsrecht", "widerruf",
         r"\d+\s*(tag|tage|werktag)", "rückgaberecht", "rückgabefrist",
         # Dutch
         "retourperiode", "retour binnen", "retourneer", r"\d+\s*(dag|dagen|werkdag)",
         # French
-        "délai d'annulation", "délai de rétractation", "annulation",
-        r"\d+\s*jours",
+        "délai d'annulation", "délai de rétractation", "annulation", r"\d+\s*jours",
         # Spanish
         "plazo de cancelación", "cancelación",
+        # Swedish
+        r"\d+\s*dagars", "ångerrätt", "returperiod", "öppet köp",
+        r"\d+\s*dag.*retur", r"retur.*\d+\s*dag",
+        # Danish
+        "fortrydelsesret", r"\d+\s*dages?\s*retur",
     ],
     "refund method": [
         # English
@@ -1021,6 +1133,11 @@ REFUND_CONTENT_SECTIONS = {
         "remboursement par", "remboursé sur", "crédit",
         # Spanish
         "reembolso al", "método de reembolso",
+        # Swedish
+        "återbetalning", "återbetalningssätt", "återbetalas",
+        "ursprungliga betalningsmetod", "betalningsmetod", "behandlas",
+        # Danish
+        "tilbagebetaling", "refundering",
     ],
     "damaged goods": [
         # English
@@ -1034,6 +1151,10 @@ REFUND_CONTENT_SECTIONS = {
         "article endommagé", "défectueux", "article incorrect", "endommagé",
         # Spanish
         "artículo dañado", "defectuoso",
+        # Swedish
+        "skadade", "defekta", "felaktiga", "skada", "defekt", "felaktig",
+        # Danish
+        "beskadiget", "fejlagtig",
     ],
     "return procedure": [
         # English
@@ -1048,6 +1169,10 @@ REFUND_CONTENT_SECTIONS = {
         "contacter", "formulaire", "étape", "demande de retour",
         # Spanish
         "contactar", "formulario", "solicitar devolución",
+        # Swedish
+        "kontakta", "ordernummer", "instruktioner", "påbörja", "godkänd",
+        # Danish
+        "kontakt", "ordrenummer",
     ],
     "shipping costs": [
         # English
@@ -1062,6 +1187,11 @@ REFUND_CONTENT_SECTIONS = {
         "frais de port", "frais de retour", "retour gratuit", "porté offert",
         # Spanish
         "gastos de envío", "devolución gratuita",
+        # Swedish
+        "fraktkostnader", "returfraktkostnad", "fraktkostnad", "gratis retur",
+        "kunden ansvarar", "returfrakten",
+        # Danish
+        "returfragt", "fragtomkostninger",
     ],
 }
 
@@ -1126,16 +1256,7 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
     if not has_address:
         missing_specific.append("Physical address missing")
 
-    # Link-quality warnings (present but not linked properly)
-    link_warnings = []
-    if has_email and not email_is_linked:
-        link_warnings.append("email should be a mailto: hyperlink")
-    if has_address and not address_is_linked:
-        link_warnings.append("address should link to Google Maps or equivalent")
-
     base_msg = f"{found}/3 contact methods: {', '.join(details)}."
-    if link_warnings:
-        base_msg += f" Recommended improvements: {'; '.join(link_warnings)}."
 
     if found >= 2:
         return {"status": "PASS", "url": url, "explanation": base_msg}
@@ -1144,7 +1265,7 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
             "status": "WARNING", "url": url,
             "explanation": (
                 f"{base_msg} "
-                f"Google requires at least 2 contact methods. "
+                "Google requires at least 2 contact methods. "
                 + " ".join(missing_specific) + "."
             ),
         }
@@ -1154,6 +1275,117 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
             "No contact info found on contact page. "
             "Add at least 2 of: " + ", ".join(missing_specific) + "."
         ),
+    }
+
+
+async def check_contact_link_quality(client, base_url, api_key=None) -> dict:
+    """Discrete check: validates that email addresses are mailto: links, phone numbers are tel: links,
+    and the business address is hyperlinked to Google Maps or equivalent.
+    Checks BOTH the contact page and the homepage footer (where addresses often appear).
+    Reports linked-instances / total-instances for each contact type."""
+
+    # Fetch contact page + homepage footer
+    contact_html, contact_url = await fetch_first_available(
+        client, base_url, CONTACT_CHECK_PATHS, api_key, nav_category="contact"
+    )
+    home_html = await fetch_page(client, base_url, api_key)
+
+    pages = {}
+    if contact_html:
+        pages["contact page"] = contact_html
+    if home_html:
+        pages["homepage/footer"] = home_html
+
+    if not pages:
+        return {"status": "WARNING", "url": None,
+                "explanation": "Could not fetch pages to check contact link quality."}
+
+    email_total = email_linked = 0
+    phone_total = phone_linked = 0
+    address_total = address_linked = 0
+    _email_seen: set = set()
+    _phone_seen: set = set()
+
+    for page_name, html in pages.items():
+        soup = BeautifulSoup(html, "html.parser")
+        text = soup.get_text(separator=" ")
+
+        # Emails in text vs mailto: links
+        emails_text = set(re.findall(
+            r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,6}(?=[^a-zA-Z0-9]|$)", text
+        ))
+        emails_linked = set(
+            a["href"].replace("mailto:", "").split("?")[0].strip().lower()
+            for a in soup.find_all("a", href=re.compile(r"^mailto:", re.I))
+        )
+        new_emails = emails_text - _email_seen
+        _email_seen.update(new_emails)
+        email_total += len(new_emails)
+        email_linked += len(new_emails & {e.lower() for e in emails_linked})
+        # also count mailto: links not found in text
+        extra_linked = emails_linked - {e.lower() for e in emails_text}
+        email_total += len(extra_linked - _email_seen)
+        email_linked += len(extra_linked - _email_seen)
+        _email_seen.update(extra_linked)
+
+        # Phones in text vs tel: links
+        phones_text = set(
+            re.sub(r"[\s\-\.\(\)]", "", p)
+            for p in PHONE_PATTERN.findall(text)
+            if len(re.sub(r"\D", "", p)) >= 7
+        )
+        phones_linked = set(
+            re.sub(r"[\s\-\.\(\)]", "", a["href"].replace("tel:", "").strip())
+            for a in soup.find_all("a", href=re.compile(r"^tel:", re.I))
+        )
+        new_phones = phones_text - _phone_seen
+        _phone_seen.update(new_phones)
+        phone_total += len(new_phones)
+        phone_linked += sum(1 for p in new_phones if any(p in pl or pl in p for pl in phones_linked))
+
+        # Address: detect address-like text blocks vs map hyperlinks
+        has_address_text = any(
+            (re.search(kw, text, re.IGNORECASE) if re.compile(kw).groups == 0 else False)
+            or (kw.lower() in text.lower())
+            for kw in ADDRESS_KEYWORDS
+            if kw
+        )
+        if has_address_text:
+            address_total += 1
+            if soup.find("a", href=_MAP_LINK_RE):
+                address_linked += 1
+
+    issues = []
+    if email_total > 0 and email_linked < email_total:
+        issues.append(f"{email_linked}/{email_total} email address(es) are mailto: links")
+    if phone_total > 0 and phone_linked < phone_total:
+        issues.append(f"{phone_linked}/{phone_total} phone number(s) have tel: links")
+    if address_total > 0 and address_linked < address_total:
+        issues.append(f"{address_linked}/{address_total} address instance(s) linked to a map")
+
+    summary_parts = []
+    if email_total > 0:
+        summary_parts.append(f"Email: {email_linked}/{email_total} linked (mailto:)")
+    if phone_total > 0:
+        summary_parts.append(f"Phone: {phone_linked}/{phone_total} linked (tel:)")
+    if address_total > 0:
+        summary_parts.append(f"Address: {address_linked}/{address_total} linked (map)")
+
+    if issues:
+        return {
+            "status": "WARNING",
+            "url": contact_url,
+            "explanation": (
+                "Contact link quality issues: " + "; ".join(issues) + ". "
+                "Linked contact details improve GMC trust signals and click-to-action for customers."
+            ),
+            "details": summary_parts,
+        }
+    return {
+        "status": "PASS",
+        "url": contact_url,
+        "explanation": "All contact methods are properly hyperlinked (mailto:, tel:, map link). " + "; ".join(summary_parts),
+        "details": summary_parts,
     }
 
 
@@ -1331,7 +1563,8 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
 
         try:
             (shipping, duplicate, refund, hours, privacy, tos, about, contact, faq,
-             contact_completeness, refund_footer, refund_quality, payment_methods) = await asyncio.wait_for(
+             contact_completeness, contact_link_quality, refund_footer, refund_quality,
+             payment_methods) = await asyncio.wait_for(
                 asyncio.gather(
                     check_shipping_policy(client, base_url, api_key),
                     check_duplicate_shipping_policy(client, base_url, api_key),
@@ -1343,6 +1576,7 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
                     check_contact_page(client, base_url, api_key),
                     check_faq(client, base_url, api_key),
                     check_contact_info_completeness(client, base_url, api_key),
+                    check_contact_link_quality(client, base_url, api_key),
                     check_refund_in_footer(client, base_url, api_key),
                     check_refund_policy_quality(client, base_url, api_key),
                     check_payment_methods_visible(client, base_url, api_key),
@@ -1351,7 +1585,8 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
             )
         except asyncio.TimeoutError:
             shipping = duplicate = refund = hours = privacy = tos = about = contact = faq = \
-                contact_completeness = refund_footer = refund_quality = payment_methods = {**timeout_result}
+                contact_completeness = contact_link_quality = refund_footer = refund_quality = \
+                payment_methods = {**timeout_result}
         finally:
             # Clear cache entries after scan to avoid stale data
             _nav_cache.pop(base_url, None)
@@ -1361,8 +1596,8 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
 
     statuses = [shipping["status"], duplicate["status"], refund["status"], hours["status"],
                 privacy["status"], tos["status"], about["status"], contact["status"], faq["status"],
-                contact_completeness["status"], refund_footer["status"], refund_quality["status"],
-                payment_methods["status"]]
+                contact_completeness["status"], contact_link_quality["status"],
+                refund_footer["status"], refund_quality["status"], payment_methods["status"]]
     overall = "FAIL" if "FAIL" in statuses else "WARNING" if "WARNING" in statuses else "PASS"
 
     return {
@@ -1379,6 +1614,7 @@ async def run_policy_checks(store_url: str, scraperapi_key: str | None = None) -
             "contact_page": contact,
             "faq": faq,
             "contact_info_completeness": contact_completeness,
+            "contact_link_quality": contact_link_quality,
             "refund_in_footer": refund_footer,
             "refund_policy_quality": refund_quality,
             "payment_methods": payment_methods,
