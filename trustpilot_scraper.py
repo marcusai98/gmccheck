@@ -143,27 +143,47 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
 
     soup = BeautifulSoup(html, "html.parser")
 
-    # Controleer of pagina bestaat (404) — uitgebreide detectie
+    # Page existence detection — three distinct cases:
+    # 1. Real 404 / no profile at all → WARNING
+    # 2. Profile exists but 0 reviews  → INFO (neutral, not a scraper failure)
+    # 3. Profile exists with reviews    → continue to score parsing
     page_text = soup.get_text().lower()
-    not_found_signals = [
+
+    # Signals that mean "profile does NOT exist"
+    no_profile_signals = [
         "page not found",
-        "be the first to review",
         "hasn\'t been reviewed",
-        "no reviews yet",
-        "write a review",
         "this company has not been reviewed",
+        "this business doesn\'t have any reviews yet",
     ]
+    # Signals that mean "profile EXISTS but has 0 reviews yet"
+    zero_reviews_signals = [
+        "be the first to review",
+        "be the first to write a review",
+        "no reviews yet",
+        "write the first review",
+        "claim this business",
+    ]
+
     is_404 = ("404" in page_text and len(page_text) < 500)
-    is_not_found = any(s in page_text for s in not_found_signals)
-    
-    # Also verify the business page shows the domain we asked for
     domain_in_page = domain.replace("www.", "") in html.lower()
-    
-    if is_404 or (is_not_found and not domain_in_page):
+
+    is_no_profile = any(s in page_text for s in no_profile_signals)
+    is_zero_reviews = any(s in page_text for s in zero_reviews_signals)
+
+    # Hard 404 or profile clearly absent
+    if is_404 or (is_no_profile and not domain_in_page):
         return {"domain": domain, "trustpilot_url": tp_url, "status": "WARNING",
-                "explanation": "No Trustpilot page found. Not a FAIL but increases review risk.",
+                "explanation": "No Trustpilot profile found for this domain. Creating a profile and collecting reviews improves GMC trust signals.",
                 "score": None, "review_count": None, "score_label": None,
                 "present": False, "fetch_method": method}
+
+    # Profile found but explicitly shows zero reviews
+    if is_zero_reviews and domain_in_page:
+        return {"domain": domain, "trustpilot_url": tp_url, "status": "INFO",
+                "explanation": "Trustpilot profile exists but has no reviews yet — neutral signal. Start collecting reviews to build GMC trust.",
+                "score": None, "review_count": 0, "score_label": None,
+                "present": True, "fetch_method": method}
 
     # Parse score using multiple strategies (Trustpilot changes structure frequently)
     import re as _re, json as _json
@@ -284,8 +304,15 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
     label_map = {(4.5,5.0):"Excellent",(3.5,4.5):"Great",(2.5,3.5):"Average",(1.5,2.5):"Poor",(0.0,1.5):"Bad"}
     score_label = next((l for (lo,hi),l in label_map.items() if score and lo <= score <= hi), None)
 
+    # If score is still None after all strategies: distinguish 0-reviews from parse failure
     if score is None:
-        status_label, explanation = "WARNING", "Page loaded but score not found. Manual check recommended."
+        confirmed_zero = (review_count is not None and review_count == 0)
+        if confirmed_zero:
+            status_label = "INFO"
+            explanation = "Trustpilot profile exists but has no reviews yet — neutral signal. Start collecting reviews to build GMC trust."
+        else:
+            status_label = "WARNING"
+            explanation = "Trustpilot page loaded and reviews may exist, but score could not be parsed. Verify manually."
     elif score < SCORE_FAIL:
         status_label = "FAIL"
         explanation = (f"Score {score:.1f}/5 ({score_label}) — below the hard threshold of 3.0. "
@@ -293,7 +320,7 @@ async def run_trustpilot_check(store_url: str, scraperapi_key: str | None = None
     elif review_count is not None and review_count < MIN_REVIEWS:
         status_label = "WARNING"
         explanation = (f"Score {score:.1f}/5 but only {review_count} review(s) — "
-            "te weinig reviews voor een betrouwbaar trust signaal.")
+            "too few reviews for a reliable trust signal. Aim for at least 5.")
     else:
         status_label = "PASS"
         explanation = (f"Score {score:.1f}/5 ({score_label}) based on "

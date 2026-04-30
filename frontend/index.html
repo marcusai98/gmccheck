@@ -334,6 +334,7 @@ nav {
 .badge-WARNING { background: rgba(255,159,10,0.12); color: var(--warn); }
 .badge-FAIL { background: rgba(255,69,58,0.12); color: var(--fail); }
 .badge-ERROR, .badge-SKIPPED { background: rgba(255,255,255,0.06); color: var(--muted); }
+.badge-INFO { background: rgba(96,165,250,0.12); color: #60a5fa; }
 .check-name { font-size: 0.86rem; font-weight: 500; }
 .check-desc { font-size: 0.78rem; color: var(--muted); margin-top: 2px; line-height: 1.5; }
 .check-items { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
@@ -889,7 +890,7 @@ function showResults(report, url) {
   }
   document.getElementById('checksContainer').innerHTML = html;
 
-  const issues = allChecks.filter(c => c.status==='FAIL'||c.status==='WARNING');
+  const issues = allChecks.filter(c => c.status==='FAIL'||c.status==='WARNING');  // INFO is neutral — not surfaced as an issue
   if (issues.length > 0) {
     let fix = `<div class="fixes-card"><div class="fixes-title">⚠ ${issues.length} issue${issues.length>1?'s':''} to fix</div>`;
     issues.forEach((c,i) => { fix += `<div class="fix-row"><div class="fix-n">${i+1}.</div><div class="fix-body"><span class="fix-name-bold">[${c.status}] ${c.name}</span>${c.explanation?' — '+c.explanation:''}</div></div>`; });
@@ -941,6 +942,7 @@ function downloadPDF() {
     #resultsSection .badge-PASS { background: #d1fae5 !important; color: #065f46 !important; }
     #resultsSection .badge-WARNING { background: #fef3c7 !important; color: #92400e !important; }
     #resultsSection .badge-FAIL { background: #fee2e2 !important; color: #991b1b !important; }
+    #resultsSection .badge-INFO { background: #dbeafe !important; color: #1e40af !important; }
     #resultsSection .score-pct.high { color: #065f46 !important; }
     #resultsSection .score-pct.mid { color: #92400e !important; }
     #resultsSection .score-pct.low { color: #991b1b !important; }

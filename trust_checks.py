@@ -46,6 +46,9 @@ async def run_trust_checks(store_url: str, scraperapi_key: str | None = None) ->
         overall = "FAIL"
     elif "WARNING" in statuses or "ERROR" in statuses:
         overall = "WARNING"
+    elif "INFO" in statuses:
+        # INFO = neutral signal (e.g. 0 Trustpilot reviews) — does not degrade overall trust
+        overall = "PASS"
     else:
         overall = "PASS"
 
