@@ -28,147 +28,25 @@ from urllib.parse import urlparse, urlencode
 import httpx
 from bs4 import BeautifulSoup
 
+from lang_config import (
+    SUPPORTED_LANGS,
+    LANG_SIGNATURES as _LANG_SIGNATURES,
+    SHIPPING_CRITICAL as SHIPPING_CRITICAL_BY_LANG,
+    REFUND_CRITICAL as REFUND_CRITICAL_BY_LANG,
+    REFUND_SECTIONS as REFUND_CONTENT_SECTIONS,
+    PRIVACY_CRITICAL as PRIVACY_CRITICAL_BY_LANG,
+    PRIVACY_RECOMMENDED as PRIVACY_RECOMMENDED_BY_LANG,
+    TOS_KEYWORDS,
+    PAGE_ALIASES_EXTRA,
+)
+
 HUMAN_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
 # ── Shipping velden ──────────────────────────────────────────────────────
-
-SHIPPING_CRITICAL_BY_LANG = {
-    "en": {
-        "delivery_time": [
-            r"\d+[-–]\d+\s+(business\s+)?days?",
-            r"\d+\s+(business\s+)?days?",
-            r"(standard|express|expedited)\s+(shipping|delivery)",
-            r"(delivery|shipping)\s+(time|timeframe|estimate|window)",
-            r"arrives?\s+(in|within)\s+\d+",
-            r"(within|in)\s+\d+[-–\s]\d+\s+(business\s+)?days?",
-        ],
-        "shipping_cost": [
-            r"free\s+shipping",
-            r"free\s+deliver",
-            r"shipping\s+(cost|fee|price|rate|is\s+free)",
-            r"\$[\d.]+\s*(shipping|delivery)",
-            r"flat\s+rate",
-            r"calculated\s+at\s+checkout",
-            r"free\s+over\s+\$",
-            r"no\s+shipping\s+(cost|fee|charge)",
-        ],
-    },
-    "de": {
-        "delivery_time": [
-            r"\d+[-–]\d+\s+werktag",
-            r"\d+\s+werktag",
-            r"lieferzeit",
-            r"lieferdauer",
-            r"liefert\s+in",
-            r"versanddauer",
-            r"zustellung\s+(innerhalb|in)\s+\d+",
-            r"lieferung\s+(innerhalb|in|erfolgt)",
-            r"\d+[-–]\d+\s+arbeitstag",
-        ],
-        "shipping_cost": [
-            r"versandkost",
-            r"versandfrei",
-            r"kostenlos(er)?\s+versand",
-            r"gratis\s+versand",
-            r"versandkosten\s+(ab|frei|kostenlos|betragen)",
-            r"porto",
-            r"€[\d,.]+\s*versand",
-            r"versandkosten\s+werden",
-        ],
-    },
-    "nl": {
-        "delivery_time": [
-            r"levertijd",
-            r"levert\s+binnen",
-            r"verzendtijd",
-            r"\d+[-–]\d+\s+werkdag",
-            r"binnen\s+\d+\s+werkdag",
-            r"\d+\s+werkdag",
-        ],
-        "shipping_cost": [
-            r"verzendkost",
-            r"gratis\s+verzend",
-            r"verzending\s+(gratis|vrij|kosten)",
-            r"portokost",
-            r"verzendkosten",
-        ],
-    },
-    "fr": {
-        "delivery_time": [
-            r"délai\s+de\s+livraison",
-            r"livraison\s+en\s+\d+",
-            r"jours?\s+ouvrables?",
-            r"jours?\s+ouvré",
-            r"délai\s+d.expédition",
-        ],
-        "shipping_cost": [
-            r"frais\s+de\s+port",
-            r"livraison\s+gratuite",
-            r"port\s+offert",
-            r"frais\s+de\s+livraison",
-            r"expédition\s+gratuite",
-        ],
-    },
-    "es": {
-        "delivery_time": [
-            r"tiempo\s+de\s+entrega",
-            r"plazo\s+de\s+entrega",
-            r"días?\s+hábiles?",
-            r"días?\s+laborables?",
-            r"envío\s+en\s+\d+",
-        ],
-        "shipping_cost": [
-            r"gastos?\s+de\s+envío",
-            r"envío\s+gratuito",
-            r"envío\s+gratis",
-            r"costes?\s+de\s+envío",
-        ],
-    },
-    "sv": {
-        "delivery_time": [
-            r"leveranstider?",
-            r"\d+\s*(till|–|-|to)\s*\d+\s*arbetsdagar?",
-            r"\d+\s*arbetsdagar?",
-            r"levereras?\s+(inom|på)\s+\d+",
-            r"hanteringstid",
-            r"transporttid",
-            r"beräknad\s+.*leveranstid",
-            r"leveransområden?",
-        ],
-        "shipping_cost": [
-            r"fraktkostnader?",
-            r"fri\s*frakt",
-            r"gratis\s*frakt",
-            r"fraktavgift",
-            r"standardfraktavgift",
-            r"\d+\s*kr",
-            r"\d+\s*sek",
-            r"fraktvillkor",
-            r"leveransavgift",
-        ],
-    },
-    # Danish (da) — shares many shipping terms with Swedish
-    "da": {
-        "delivery_time": [
-            r"leveringstider?",
-            r"\d+\s*(til|-|to)\s*\d+\s*hverdage",
-            r"\d+\s*hverdage",
-            r"leveringstid",
-            r"forsendelsestid",
-        ],
-        "shipping_cost": [
-            r"fragtomkostninger?",
-            r"gratis\s*fragt",
-            r"gratis\s*forsendelse",
-            r"fragtgebyr",
-            r"\d+\s*kr",
-            r"\d+\s*dkk",
-        ],
-    },
-}
+# (SHIPPING_CRITICAL_BY_LANG imported from lang_config)
 
 SHIPPING_RECOMMENDED = {
     "shipping_countries": [
@@ -208,121 +86,7 @@ SHIPPING_RECOMMENDED = {
 }
 
 # ── Refund velden ────────────────────────────────────────────────────────
-
-REFUND_CRITICAL_BY_LANG = {
-    "en": {
-        "return_window": [
-            r"\d+[\s-]day\s+return",
-            r"return(s)?\s+within\s+\d+",
-            r"within\s+\d+\s+days?\s+of\s+(purchase|delivery|receipt)",
-            r"\d+\s+days?\s+to\s+return",
-            r"(30|60|90|14|7)\s+day(s)?\s+(return|refund|money)",
-            r"hassle[\s-]free\s+return",
-        ],
-        "return_shipping_cost": [
-            r"(customer|buyer|you)\s+(pay|is\s+responsible|covers?)\s+(for\s+)?return",
-            r"free\s+return(s)?",
-            r"return\s+shipping\s+(is\s+)?(free|covered|paid|at\s+your\s+cost)",
-            r"prepaid\s+return(s)?\s+label",
-            r"return\s+(postage|label|cost|fee)",
-            r"we\s+(cover|pay\s+for)\s+return",
-        ],
-    },
-    "de": {
-        "return_window": [
-            r"\d+\s+(tage|tagen)\s+(rückgabe|rücksendung|widerruf|rückgaberecht)",
-            r"rückgabefrist",
-            r"widerrufsfrist",
-            r"rückgaberecht",
-            r"innerhalb\s+von\s+\d+\s+tagen",
-            r"\d+[\s-]tägig(es?)?\s+(rückgabe|widerruf)",
-            r"\d+\s+tage\s+rückgabe",
-        ],
-        "return_shipping_cost": [
-            r"rücksendekosten",
-            r"rückversand\s+(kostenlos|gratis|kostenfrei|auf\s+kosten)",
-            r"kostenlose\s+(rücksendung|rückgabe|retoure)",
-            r"rücksendung\s+(ist\s+)?(kostenlos|kostenfrei|gratis)",
-            r"porto\s+(wird\s+)?(erstattet|übernommen|kostenlos)",
-            r"rückgabe\s+kostenlos",
-        ],
-    },
-    "nl": {
-        "return_window": [
-            r"\d+\s+dag(en)?\s+(retour|terugsturen|retourneren)",
-            r"retourperiode",
-            r"retourneren\s+binnen\s+\d+",
-            r"\d+\s+dag(en)?\s+bedenktijd",
-        ],
-        "return_shipping_cost": [
-            r"retourkosten",
-            r"gratis\s+retour",
-            r"retourverzending\s+(gratis|kosteloos)",
-            r"kosten\s+voor\s+retour",
-        ],
-    },
-    "fr": {
-        "return_window": [
-            r"\d+\s+jours?\s+(pour\s+)?(retourner|renvoyer|retour)",
-            r"droit\s+de\s+rétractation",
-            r"délai\s+de\s+retour",
-            r"\d+\s+jours?\s+pour\s+changer",
-        ],
-        "return_shipping_cost": [
-            r"frais\s+de\s+retour",
-            r"retour\s+gratuit",
-            r"retour\s+offert",
-            r"remboursement\s+des\s+frais",
-        ],
-    },
-    "es": {
-        "return_window": [
-            r"\d+\s+días?\s+(para\s+)?(devolución|devolver|retorno)",
-            r"plazo\s+de\s+devolución",
-            r"política\s+de\s+devolución",
-        ],
-        "return_shipping_cost": [
-            r"gastos?\s+de\s+devolución",
-            r"devolución\s+gratuita",
-            r"devolución\s+gratis",
-        ],
-    },
-    "sv": {
-        "return_window": [
-            r"\d+\s*dagars?\s*(retur|öppet\s*köp|returperiod)",
-            r"ångerrätt",
-            r"returpolicy",
-            r"\d+\s*dagar\s*(efter|från)\s*(leverans|köp|beställning)",
-            r"begara\s+retur\s+.*\d+",
-            r"retur\s+.*\d+\s*dag",
-        ],
-        "return_shipping_cost": [
-            r"returfraktkostnad",
-            r"fraktkostnader\s+(för\s+)?retur",
-            r"fraktkostnad.*retur",
-            r"retur.*fraktkostnad",
-            r"kunden\s+ansvarar",
-            r"fraktkostnaderna\s+är\s+inte",
-            r"\d+\s*(till|–|-)\s*\d+\s*sek.*retur",
-            r"gratis\s+retur",
-            r"returfritt",
-        ],
-    },
-    "da": {
-        "return_window": [
-            r"\d+\s*dages?\s*(returret|returnering|returpolitik)",
-            r"fortrydelsesret",
-            r"returpolitik",
-            r"\d+\s*dage\s*(efter|fra)\s*(levering|køb)",
-        ],
-        "return_shipping_cost": [
-            r"returfragt",
-            r"fragtomkostninger.*retur",
-            r"kunden\s+betaler",
-            r"gratis\s+returnering",
-        ],
-    },
-}
+# (REFUND_CRITICAL_BY_LANG imported from lang_config)
 
 REFUND_RECOMMENDED = {
     "refund_processing_time": [
@@ -589,6 +353,15 @@ PAGE_ALIASES = {
     },
 }
 
+# Merge in extra paths/keywords from lang_config for new languages
+for _cat, _extra in PAGE_ALIASES_EXTRA.items():
+    if _cat in PAGE_ALIASES:
+        for _field in ("paths", "slug_keywords", "title_keywords", "link_text"):
+            if _field in _extra:
+                PAGE_ALIASES[_cat][_field] = list(dict.fromkeys(
+                    PAGE_ALIASES[_cat][_field] + _extra[_field]
+                ))
+
 # Derive backwards-compat constants from PAGE_ALIASES
 PAGE_CATEGORY_KEYWORDS = {
     cat: list(dict.fromkeys(data["slug_keywords"] + data["title_keywords"]))
@@ -607,37 +380,7 @@ CONTACT_CHECK_PATHS = PAGE_ALIASES["contact"]["paths"]
 FAQ_PATHS           = PAGE_ALIASES["faq"]["paths"]
 CONTACT_PATHS       = PAGE_ALIASES["contact"]["paths"]
 
-# Multilingual privacy check keywords
-PRIVACY_CRITICAL_BY_LANG = {
-    # Keywords chosen to match real policy pages reliably.
-    # Root words that appear regardless of inflection/case.
-    "en": ["collect", "personal", "data", "information"],
-    "de": ["daten", "datenschutz", "personenbezogene"],
-    "nl": ["gegevens", "persoonsgegevens", "privacy"],
-    "fr": ["donnees", "personnelles", "confidentialite"],
-    "es": ["datos", "personales", "privacidad"],
-    "it": ["dati", "personali", "privacy"],
-    "sv": ["personuppgifter", "integritetspolicy", "dataskydd"],
-    "da": ["personoplysninger", "privatlivspolitik", "databeskyttelse"],
-    "no": ["personopplysninger", "personvernerklaering", "personvern"],
-}
-PRIVACY_RECOMMENDED_BY_LANG = {
-    "en": ["cookie", "third party", "gdpr", "contact"],
-    "de": ["cookie", "dritte", "dsgvo", "kontakt"],
-    "nl": ["cookie", "derde", "avg", "contact"],
-    "fr": ["cookie", "tiers", "rgpd", "contact"],
-    "es": ["cookie", "terceros", "rgpd", "contacto"],
-    "it": ["cookie", "terze parti", "gdpr", "contatto"],
-}
-
-_LANG_SIGNATURES = {
-    "de": ["und", "die", "der", "ist", "wir", "versand", "lieferung", "ruckgabe", "zahlung", "bestellung"],
-    "nl": ["en", "de", "het", "van", "een", "verzending", "retour", "bestelling", "betaling"],
-    "fr": ["et", "le", "la", "les", "nous", "livraison", "retour", "commande", "paiement"],
-    "es": ["y", "el", "la", "los", "envio", "devolucion", "pedido", "pago"],
-    "it": ["e", "il", "la", "i", "gli", "spedizione", "reso", "ordine", "pagamento"],
-    "sv": ["och", "att", "det", "som", "för", "leverans", "frakt", "retur", "betalning", "beställning"],
-}
+# (PRIVACY_CRITICAL_BY_LANG, PRIVACY_RECOMMENDED_BY_LANG, _LANG_SIGNATURES imported from lang_config)
 
 
 def detect_language(html: str) -> str:
@@ -647,14 +390,14 @@ def detect_language(html: str) -> str:
     html_tag = soup.find("html")
     if html_tag and html_tag.get("lang"):
         lang = html_tag["lang"].lower().split("-")[0].split("_")[0][:2]
-        if lang in ("en", "de", "nl", "fr", "es", "it", "pt", "sv", "da", "no", "fi"):
+        if lang in SUPPORTED_LANGS:
             return lang
     # 2. meta tags
     for attr in [{"http-equiv": re.compile("content-language", re.I)}, {"name": re.compile("^language$", re.I)}]:
         meta = soup.find("meta", attrs=attr)
         if meta and meta.get("content"):
             lang = meta["content"].lower().split("-")[0][:2]
-            if lang in ("en", "de", "nl", "fr", "es", "it", "pt", "sv", "da", "no", "fi"):
+            if lang in SUPPORTED_LANGS:
                 return lang
     # 3. Content heuristic
     words = set(soup.get_text(separator=" ").lower().split())
@@ -981,24 +724,7 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
 
 # A page qualifies as ToS if it contains at least 2 of these keywords.
 # This handles "Terms and Conditions", "Terms of Use", "General Conditions", etc.
-# A page qualifies as ToS if at least 2 of these keywords are present.
-# Extended to cover Swedish/Nordic and other common ToS terminology.
-TOS_KEYWORD_POOL = [
-    # English
-    "terms", "conditions", "agreement", "service", "use", "policy",
-    # Swedish
-    "villkor", "användarvillkor", "användning",
-    # Danish
-    "betingelser", "vilkår", "købsbetingelser",
-    # German
-    "nutzungsbedingungen", "geschäftsbedingungen", "agb",
-    # Dutch
-    "voorwaarden", "gebruiksvoorwaarden",
-    # French
-    "conditions", "utilisation",
-    # Spanish
-    "términos", "condiciones",
-]
+# (TOS_KEYWORDS imported from lang_config)
 
 
 async def check_privacy_policy(client, base_url, api_key=None) -> dict:
@@ -1030,7 +756,7 @@ async def check_terms_of_service(client, base_url, api_key=None) -> dict:
     text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
     # Require at least 2 keywords from the pool — this accepts:
     # "Terms of Service", "Terms and Conditions", "Terms of Use", "General Conditions", etc.
-    found_keywords = [kw for kw in TOS_KEYWORD_POOL if kw in text]
+    found_keywords = [kw for kw in TOS_KEYWORDS if kw in text]
     if len(found_keywords) < 2:
         return {"status": "WARNING", "url": url,
                 "explanation": f"Terms page found but content appears very thin (found: {', '.join(found_keywords) or 'none'}). Add your full terms."}
@@ -1100,100 +826,7 @@ PAYMENT_KEYWORDS = [
     "amex", "maestro", "bancontact", "sofort", "apple pay", "google pay",
     "sepa", "przelewy", "diners", "discover",
 ]
-REFUND_CONTENT_SECTIONS = {
-    "cancellation period": [
-        # English
-        r"\d+\s*(day|business day)", "cancel", "cancellation period", "return window",
-        r"\d+[-\s]day return", r"within \d+ days",
-        # German
-        "stornierungsfrist", "widerrufsfrist", "rüktrittsrecht", "widerrufsrecht", "widerruf",
-        r"\d+\s*(tag|tage|werktag)", "rückgaberecht", "rückgabefrist",
-        # Dutch
-        "retourperiode", "retour binnen", "retourneer", r"\d+\s*(dag|dagen|werkdag)",
-        # French
-        "délai d'annulation", "délai de rétractation", "annulation", r"\d+\s*jours",
-        # Spanish
-        "plazo de cancelación", "cancelación",
-        # Swedish
-        r"\d+\s*dagars", "ångerrätt", "returperiod", "öppet köp",
-        r"\d+\s*dag.*retur", r"retur.*\d+\s*dag",
-        # Danish
-        "fortrydelsesret", r"\d+\s*dages?\s*retur",
-    ],
-    "refund method": [
-        # English
-        "refund to", "original payment", "store credit", "same payment", "bank transfer",
-        "credited to", "refunded to", "refund via", "refund will",
-        # German
-        "rückerstattungsmethode", "erstattet", "erstattung", "rückzahlung",
-        "erstattet auf", "gutschrift", "auf gleichem weg", "zurücküberwiesen",
-        # Dutch
-        "terugbetaal", "teruggestort", "creditcard", "op dezelfde wijze",
-        # French
-        "remboursement par", "remboursé sur", "crédit",
-        # Spanish
-        "reembolso al", "método de reembolso",
-        # Swedish
-        "återbetalning", "återbetalningssätt", "återbetalas",
-        "ursprungliga betalningsmetod", "betalningsmetod", "behandlas",
-        # Danish
-        "tilbagebetaling", "refundering",
-    ],
-    "damaged goods": [
-        # English
-        "damaged", "defective", "incorrect", "wrong item", "faulty", "broken",
-        # German
-        "beschädigte ware", "beschädigung", "defekt", "beschädigt", "falsche artikel",
-        "fehlerhaft", "mangelhaft", "falsch geliefert",
-        # Dutch
-        "beschadigd", "defect", "verkeerd", "foutief",
-        # French
-        "article endommagé", "défectueux", "article incorrect", "endommagé",
-        # Spanish
-        "artículo dañado", "defectuoso",
-        # Swedish
-        "skadade", "defekta", "felaktiga", "skada", "defekt", "felaktig",
-        # Danish
-        "beskadiget", "fejlagtig",
-    ],
-    "return procedure": [
-        # English
-        "email", "contact", "form", "portal", "procedure", "how to return",
-        "step", "initiate", "request a return", "start a return",
-        # German
-        "e-mail", "kontaktieren", "formular", "schritt", "rüksendung beantragen",
-        "retoure beantragen", "wende dich",
-        # Dutch
-        "e-mail", "contacteer", "retour aanvragen", "stap",
-        # French
-        "contacter", "formulaire", "étape", "demande de retour",
-        # Spanish
-        "contactar", "formulario", "solicitar devolución",
-        # Swedish
-        "kontakta", "ordernummer", "instruktioner", "påbörja", "godkänd",
-        # Danish
-        "kontakt", "ordrenummer",
-    ],
-    "shipping costs": [
-        # English
-        "shipping cost", "postage", "free return", "at your own cost", "return shipping",
-        "return label", "prepaid",
-        # German
-        "versandkosten", "rücksendekosten", "portofrei", "kostenlos zurück",
-        "rückversand", "retourenporto",
-        # Dutch
-        "verzendkosten", "gratis retour", "retourkosten", "terugzendkosten",
-        # French
-        "frais de port", "frais de retour", "retour gratuit", "porté offert",
-        # Spanish
-        "gastos de envío", "devolución gratuita",
-        # Swedish
-        "fraktkostnader", "returfraktkostnad", "fraktkostnad", "gratis retur",
-        "kunden ansvarar", "returfrakten",
-        # Danish
-        "returfragt", "fragtomkostninger",
-    ],
-}
+# (REFUND_CONTENT_SECTIONS imported from lang_config)
 
 
 # Regex to detect Google Maps / OSM / Bing map links
