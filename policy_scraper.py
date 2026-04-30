@@ -949,7 +949,7 @@ async def check_contact_page(client, base_url, api_key=None) -> dict:
         return {"status": "FAIL", "url": None,
                 "explanation": "Contact page not found. GMC requires a way for customers to reach you."}
     text = BeautifulSoup(html, "html.parser").get_text(separator=" ")
-    emails = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    emails = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
     has_form = bool(re.search(r"<form|<input", html, re.IGNORECASE))
     if emails:
         return {"status": "PASS", "url": url,
@@ -1085,7 +1085,7 @@ async def check_contact_info_completeness(client, base_url, api_key=None) -> dic
     text = soup.get_text(separator=" ")
 
     # ─ Email — text presence + mailto: link
-    emails_in_text = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    emails_in_text = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
     has_email = bool(emails_in_text)
     email_is_linked = bool(soup.find("a", href=re.compile(r"^mailto:", re.I)))
 

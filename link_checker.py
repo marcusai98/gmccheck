@@ -186,9 +186,15 @@ def classify_page_type(url):
     if "/collections/" in url: return "Collection"
     return "Other"
 
+# Email regex — TLD uses [a-z] (lowercase only) to prevent greedy matches like
+# "support@domain.comWir" where a German/French word follows immediately without
+# whitespace. Real TLDs in page text are always lowercase (.com, .de, .co.uk).
+_EMAIL_RE = re.compile(
+    r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-z]{2,6}(?=[^a-zA-Z0-9]|$)"
+)
+
 def extract_emails(text):
-    # Word boundary after TLD prevents "support@domain.comSomeText" matches
-    raw = re.findall(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,6}(?=[^a-zA-Z0-9]|$)", text)
+    raw = _EMAIL_RE.findall(text)
     return list(dict.fromkeys(raw))  # deduplicate, preserve order
 
 def extract_links(html, base_url):
