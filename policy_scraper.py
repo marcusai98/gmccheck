@@ -33,18 +33,6 @@ HUMAN_UA = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 )
 
-SHIPPING_PATHS = [
-    "/policies/shipping-policy", "/pages/shipping",
-    "/pages/shipping-policy", "/pages/delivery",
-]
-REFUND_PATHS = [
-    "/policies/refund-policy", "/pages/returns",
-    "/pages/refund-policy", "/pages/return-policy",
-]
-CONTACT_PATHS = [
-    "/pages/contact", "/pages/contact-us", "/pages/get-in-touch",
-]
-
 # ── Shipping velden ──────────────────────────────────────────────────────
 
 SHIPPING_CRITICAL_BY_LANG = {
@@ -336,19 +324,253 @@ FIELD_LABELS = {
     "restocking_fee": "Restocking Fee",
 }
 
+PAGE_ALIASES = {
+    "about": {
+        "paths": [
+            "/pages/about-us", "/pages/about", "/about-us", "/about",
+            "/pages/our-story", "/pages/story", "/pages/brand-story",
+            "/pages/brand", "/pages/our-brand", "/pages/company", "/pages/team",
+            "/pages/mission", "/pages/our-mission",
+            "/pages/who-we-are", "/pages/who-we",
+            "/pages/meet-us", "/pages/the-brand", "/pages/the-story",
+            "/pages/uber-uns", "/pages/ueber-uns", "/pages/unsere-geschichte",
+            "/pages/geschichte", "/pages/wer-wir-sind", "/pages/unser-unternehmen",
+            "/pages/a-propos", "/pages/notre-histoire", "/pages/qui-sommes-nous",
+            "/pages/over-ons", "/pages/ons-verhaal", "/pages/wie-zijn-wij",
+            "/pages/quienes-somos", "/pages/nuestra-historia",
+            "/pages/chi-siamo",
+        ],
+        "slug_keywords": [
+            "about", "our-story", "brand-story", "the-story", "story", "company",
+            "brand", "who-we", "mission", "team", "meet", "the-brand",
+            "uber-uns", "ueber-uns", "uber_uns", "unsere-geschichte", "geschichte",
+            "wer-wir-sind", "unser-unternehmen", "unser-team",
+            "qui-sommes", "notre-histoire", "notre-equipe", "a-propos",
+            "over-ons", "ons-verhaal", "wie-zijn-wij",
+            "quienes", "quienes-somos", "nuestra-historia",
+            "chi-siamo", "la-nostra-storia",
+        ],
+        "title_keywords": [
+            "about", "our story", "brand story", "the story", "story", "company",
+            "who we are", "our mission", "meet us", "the brand",
+            "uber uns", "unsere geschichte", "wer wir sind", "unser unternehmen",
+            "a propos", "notre histoire", "qui sommes nous",
+            "over ons", "ons verhaal", "wie zijn wij",
+            "quienes somos", "nuestra historia",
+            "chi siamo",
+        ],
+        "link_text": [
+            "about", "our story", "brand story", "story", "company", "who we are",
+            "meet the team", "the brand", "our mission",
+            "uber uns", "unsere geschichte", "wer wir sind",
+            "a propos", "notre histoire", "qui sommes-nous",
+            "over ons", "ons verhaal", "wie zijn wij",
+            "quienes somos", "nuestra historia",
+            "chi siamo",
+        ],
+    },
+    "shipping": {
+        "paths": [
+            "/policies/shipping-policy", "/pages/shipping",
+            "/pages/shipping-policy", "/pages/delivery",
+            "/pages/versandbedingungen", "/pages/versand", "/pages/lieferung",
+            "/pages/verzendbeleid", "/pages/verzending",
+            "/pages/politique-livraison", "/pages/livraison",
+            "/pages/politica-envio",
+        ],
+        "slug_keywords": [
+            "shipping", "versand", "livraison", "envio", "verzending", "delivery",
+            "lieferung", "versandpolitik", "bezorging", "versandbedingungen",
+        ],
+        "title_keywords": [
+            "shipping", "delivery", "versand", "lieferung", "livraison", "envio",
+            "verzending", "bezorging", "shipping policy", "versandbedingungen",
+        ],
+        "link_text": [
+            "shipping", "delivery", "versand", "lieferung", "livraison", "envio",
+            "verzending", "shipping policy", "versandbedingungen",
+        ],
+    },
+    "refund": {
+        "paths": [
+            "/policies/refund-policy", "/pages/returns",
+            "/pages/refund-policy", "/pages/return-policy",
+            "/pages/ruckgabe", "/pages/ruckgabepolitik", "/pages/widerruf",
+            "/pages/return-und-ruckerstattungspolitik", "/pages/ruckerstattungspolitik",
+            "/pages/retourbeleid", "/pages/retour",
+            "/pages/politique-retour", "/pages/retours",
+            "/pages/devolucion", "/pages/politica-devolucion",
+        ],
+        "slug_keywords": [
+            "refund", "return", "ruckgabe", "erstattung", "retour", "retoure",
+            "remboursement", "devolucion", "terugkeer", "widerruf", "ruckerstattung",
+        ],
+        "title_keywords": [
+            "refund", "return", "returns", "ruckgabe", "erstattung", "retour",
+            "remboursement", "devolucion", "widerruf", "ruckerstattung",
+        ],
+        "link_text": [
+            "refund", "return", "returns", "ruckgabe", "erstattung", "retour",
+            "remboursement", "devolucion", "widerruf", "return policy", "refund policy",
+            "ruckerstattung",
+        ],
+    },
+    "tos": {
+        "paths": [
+            "/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service",
+            "/terms", "/pages/terms", "/policies/terms",
+            "/pages/terms-and-conditions", "/pages/terms-conditions", "/pages/termsandconditions",
+            "/pages/terms-of-use", "/pages/conditions-of-use", "/pages/general-conditions",
+            "/pages/agb", "/pages/nutzungsbedingungen", "/pages/geschaftsbedingungen",
+            "/pages/algemene-voorwaarden", "/pages/conditions-generales", "/pages/condiciones",
+        ],
+        "slug_keywords": [
+            "terms", "agb", "conditions", "condiciones", "voorwaarden",
+            "servicebedingungen", "nutzungsbedingungen", "algemene-voorwaarden",
+            "conditions-generales", "terms-of-use", "terms-and-conditions",
+            "geschaftsbedingungen",
+        ],
+        "title_keywords": [
+            "terms of service", "terms and conditions", "terms of use", "general conditions",
+            "agb", "nutzungsbedingungen", "geschaftsbedingungen", "algemene voorwaarden",
+            "conditions generales",
+        ],
+        "link_text": [
+            "terms", "terms of service", "terms and conditions", "t&cs", "agb",
+            "nutzungsbedingungen", "geschaftsbedingungen", "algemene voorwaarden", "conditions",
+        ],
+    },
+    "privacy": {
+        "paths": [
+            "/policies/privacy-policy", "/pages/privacy-policy", "/privacy-policy",
+            "/privacy", "/pages/privacy",
+            "/pages/datenschutz", "/pages/datenschutzerklarung", "/pages/datenschutzbestimmungen",
+            "/pages/privacybeleid", "/pages/politique-confidentialite",
+            "/pages/politica-privacidad",
+        ],
+        "slug_keywords": [
+            "privacy", "datenschutz", "confidentialite", "privacidad", "privacybeleid",
+            "datenschutzrichtlinie", "cookie", "datenschutzbestimmungen",
+        ],
+        "title_keywords": [
+            "privacy", "datenschutz", "privacy policy", "datenschutzerklarung",
+            "datenschutzbestimmungen", "privacybeleid", "politique de confidentialite",
+        ],
+        "link_text": [
+            "privacy", "privacy policy", "datenschutz", "datenschutzbestimmungen",
+            "privacybeleid", "politique de confidentialite",
+        ],
+    },
+    "contact": {
+        "paths": [
+            "/pages/contact", "/pages/contact-us", "/contact", "/contact-us",
+            "/pages/support", "/pages/get-in-touch",
+            "/pages/kontakt", "/pages/kontaktiere-uns",
+            "/pages/contactez-nous", "/pages/contacto",
+        ],
+        "slug_keywords": [
+            "contact", "kontakt", "kontaktiere", "contactez", "contacto",
+            "contacteer", "reach-us", "get-in-touch", "support",
+        ],
+        "title_keywords": [
+            "contact", "kontakt", "contact us", "contactez-nous", "kontaktiere uns",
+            "get in touch",
+        ],
+        "link_text": [
+            "contact", "contact us", "get in touch", "kontakt", "kontaktiere uns",
+            "contactez-nous", "reach us",
+        ],
+    },
+    "faq": {
+        "paths": [
+            "/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-questions",
+            "/pages/help", "/pages/hilfe", "/pages/aide",
+        ],
+        "slug_keywords": [
+            "faq", "frequently", "haufig", "questions", "help",
+            "hilfe", "veelgestelde", "aide",
+        ],
+        "title_keywords": [
+            "faq", "frequently asked", "haufig gestellte", "questions frequentes",
+            "veelgestelde vragen",
+        ],
+        "link_text": [
+            "faq", "frequently asked questions", "haufige fragen", "help",
+            "hilfe", "aide",
+        ],
+    },
+}
+
+# Derive backwards-compat constants from PAGE_ALIASES
+PAGE_CATEGORY_KEYWORDS = {
+    cat: list(dict.fromkeys(data["slug_keywords"] + data["title_keywords"]))
+    for cat, data in PAGE_ALIASES.items()
+}
+NAV_KEYWORDS = {
+    cat: list(dict.fromkeys(data["link_text"] + data["slug_keywords"]))
+    for cat, data in PAGE_ALIASES.items()
+}
+ABOUT_PATHS         = PAGE_ALIASES["about"]["paths"]
+SHIPPING_PATHS      = PAGE_ALIASES["shipping"]["paths"]
+REFUND_PATHS        = PAGE_ALIASES["refund"]["paths"]
+TOS_PATHS           = PAGE_ALIASES["tos"]["paths"]
+PRIVACY_PATHS       = PAGE_ALIASES["privacy"]["paths"]
+CONTACT_CHECK_PATHS = PAGE_ALIASES["contact"]["paths"]
+FAQ_PATHS           = PAGE_ALIASES["faq"]["paths"]
+CONTACT_PATHS       = PAGE_ALIASES["contact"]["paths"]
+
+# Multilingual privacy check keywords
+PRIVACY_CRITICAL_BY_LANG = {
+    # Keywords chosen to match real policy pages reliably.
+    # German/FR/NL/ES/IT use root words that appear regardless of inflection.
+    # Requiring ANY 1 of these missing triggers WARNING (not ALL must be present).
+    "en": ["collect", "personal", "data", "information"],
+    "de": ["daten", "datenschutz", "personenbezogene"],   # verarbeitung optional — not in all layouts
+    "nl": ["gegevens", "persoonsgegevens", "privacy"],
+    "fr": ["donnees", "personnelles", "confidentialite"],
+    "es": ["datos", "personales", "privacidad"],
+    "it": ["dati", "personali", "privacy"],
+}
+PRIVACY_RECOMMENDED_BY_LANG = {
+    "en": ["cookie", "third party", "gdpr", "contact"],
+    "de": ["cookie", "dritte", "dsgvo", "kontakt"],
+    "nl": ["cookie", "derde", "avg", "contact"],
+    "fr": ["cookie", "tiers", "rgpd", "contact"],
+    "es": ["cookie", "terceros", "rgpd", "contacto"],
+    "it": ["cookie", "terze parti", "gdpr", "contatto"],
+}
+
+_LANG_SIGNATURES = {
+    "de": ["und", "die", "der", "ist", "wir", "versand", "lieferung", "ruckgabe", "zahlung", "bestellung"],
+    "nl": ["en", "de", "het", "van", "een", "verzending", "retour", "bestelling", "betaling"],
+    "fr": ["et", "le", "la", "les", "nous", "livraison", "retour", "commande", "paiement"],
+    "es": ["y", "el", "la", "los", "envio", "devolucion", "pedido", "pago"],
+    "it": ["e", "il", "la", "i", "gli", "spedizione", "reso", "ordine", "pagamento"],
+}
+
 
 def detect_language(html: str) -> str:
-    """Detect page language from HTML lang attribute or meta tags. Returns 2-letter code."""
+    """Detect page language. Priority: html lang attr > meta > content heuristic > default 'en'."""
     soup = BeautifulSoup(html, "html.parser")
+    # 1. html lang attribute
     html_tag = soup.find("html")
     if html_tag and html_tag.get("lang"):
-        return html_tag["lang"].lower().split("-")[0].split("_")[0][:2]
-    meta = soup.find("meta", attrs={"http-equiv": re.compile("content-language", re.I)})
-    if meta and meta.get("content"):
-        return meta["content"].lower().split("-")[0][:2]
-    meta2 = soup.find("meta", attrs={"name": re.compile("^language$", re.I)})
-    if meta2 and meta2.get("content"):
-        return meta2["content"].lower().split("-")[0][:2]
+        lang = html_tag["lang"].lower().split("-")[0].split("_")[0][:2]
+        if lang in ("en", "de", "nl", "fr", "es", "it", "pt"):
+            return lang
+    # 2. meta tags
+    for attr in [{"http-equiv": re.compile("content-language", re.I)}, {"name": re.compile("^language$", re.I)}]:
+        meta = soup.find("meta", attrs=attr)
+        if meta and meta.get("content"):
+            lang = meta["content"].lower().split("-")[0][:2]
+            if lang in ("en", "de", "nl", "fr", "es", "it", "pt"):
+                return lang
+    # 3. Content heuristic
+    words = set(soup.get_text(separator=" ").lower().split())
+    scores = {lang: sum(1 for w in sigs if w in words) for lang, sigs in _LANG_SIGNATURES.items()}
+    best_lang, best_score = max(scores.items(), key=lambda x: x[1])
+    if best_score >= 3:
+        return best_lang
     return "en"
 
 
@@ -402,66 +624,14 @@ async def fetch_page(client: httpx.AsyncClient, url: str, api_key: str | None = 
         return None
 
 
-NAV_KEYWORDS = {
-    "refund":   ["refund", "return", "rückgabe", "erstattung", "retour", "retoure", "remboursement",
-                 "devolucion", "terugkeer", "widerruf", "rücknahme"],
-    "shipping": ["shipping", "versand", "livraison", "envio", "verzending", "delivery", "leveringen"],
-    "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto", "contacteer",
-                 "reach us", "get in touch", "support", "hilfe"],
-    "about":    ["about", "über uns", "uber-uns", "ueber-uns", "qui sommes", "quienes", "over ons",
-                 "notre histoire", "our story", "brand story", "the story", "company", "story",
-                 "brand", "who-we", "who we", "mission", "team", "meet ", "the brand",
-                 "unsere geschichte", "unsere-geschichte", "geschichte", "wer wir sind",
-                 "ons verhaal", "nuestra historia", "chi siamo"],
-    "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad", "privacybeleid",
-                 "cookie", "gdpr"],
-    "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden", "nutzungsbedingungen"],
-    "faq":      ["faq", "frequently", "häufig", "questions", "help", "hilfe"],
-}
-
 _nav_cache: dict = {}        # base_url → discovered page paths
 _page_cache: dict = {}      # full_url → html content (pre-fetched before gather)
-
-
-PAGE_CATEGORY_KEYWORDS = {
-    "refund":   ["refund", "return", "rückgabe", "erstattung", "retour", "retoure",
-                 "remboursement", "devolución", "terugkeer", "widerruf", "ruckgabe"],
-    "shipping": ["shipping", "versand", "livraison", "envio", "verzending", "delivery",
-                 "lieferung", "versandpolitik", "bezorging"],
-    "contact":  ["contact", "kontakt", "kontaktiere", "contactez", "contacto",
-                 "contacteer", "reach-us", "get-in-touch", "support"],
-    "about":    [
-                 # English
-                 "about", "our-story", "our story", "brand-story", "brand story",
-                 "the-story", "the story", "story", "company", "brand",
-                 "who-we", "who we", "mission", "team", "meet", "the-brand",
-                 # German
-                 "uber-uns", "ueber-uns", "uber_uns", "unsere-geschichte", "geschichte",
-                 "wer-wir-sind", "unser-unternehmen", "unser-team",
-                 # French
-                 "qui-sommes", "notre-histoire", "notre-equipe", "a-propos",
-                 # Dutch
-                 "over-ons", "ons-verhaal", "wie-zijn-wij",
-                 # Spanish
-                 "quienes", "quienes-somos", "nuestra-historia",
-                 # Italian
-                 "chi-siamo", "la-nostra-storia",
-                 ],
-    "privacy":  ["privacy", "datenschutz", "confidentialite", "privacidad",
-                 "privacybeleid", "datenschutzrichtlinie", "cookie"],
-    "tos":      ["terms", "agb", "conditions", "condiciones", "voorwaarden",
-                 "servicebedingungen", "nutzungsbedingungen", "algemene-voorwaarden",
-                 "conditions-generales", "terms-of-use", "terms-and-conditions"],
-    "faq":      ["faq", "frequently", "haufig", "häufig", "questions", "help",
-                 "hilfe", "veelgestelde"],
-}
 
 
 async def _discover_via_shopify_api(client, base_url, api_key=None) -> dict[str, str]:
     """Use Shopify /pages.json to get all store pages — falls back to ScraperAPI if blocked."""
     try:
         resp = await client.get(f"{base_url}/pages.json?limit=250", timeout=10)
-        # If blocked (429/403), retry via ScraperAPI
         if resp.status_code in {429, 403} and api_key:
             resp = await client.get(scraperapi_url(f"{base_url}/pages.json?limit=250", api_key), timeout=30)
         if resp.status_code != 200:
@@ -470,11 +640,12 @@ async def _discover_via_shopify_api(client, base_url, api_key=None) -> dict[str,
         discovered: dict[str, str] = {}
         for page in pages:
             handle = page.get("handle", "").lower()
-            title = page.get("title", "").lower()
-            combined = f"{handle} {title}"
-            for category, keywords in PAGE_CATEGORY_KEYWORDS.items():
+            title  = page.get("title",  "").lower()
+            for category, aliases in PAGE_ALIASES.items():
                 if category not in discovered:
-                    if any(kw in combined for kw in keywords):
+                    slug_match  = any(kw in handle for kw in aliases["slug_keywords"])
+                    title_match = any(kw in title  for kw in aliases["title_keywords"])
+                    if slug_match or title_match:
                         discovered[category] = f"/pages/{page['handle']}"
         return discovered
     except Exception:
@@ -486,10 +657,8 @@ async def _discover_via_nav_scrape(client, base_url, api_key) -> dict[str, str]:
     html = await fetch_page(client, base_url, api_key)
     if not html:
         return {}
-
     soup = BeautifulSoup(html, "html.parser")
     discovered: dict[str, str] = {}
-
     for a in soup.find_all("a", href=True):
         href = a.get("href", "").strip()
         text = a.get_text(strip=True).lower()
@@ -498,12 +667,13 @@ async def _discover_via_nav_scrape(client, base_url, api_key) -> dict[str, str]:
         if href.startswith("http") and base_url not in href:
             continue
         path = href if href.startswith("/") else ("/" + href.split(base_url, 1)[-1].lstrip("/"))
-        combined = (path + " " + text).lower()
-        for category, keywords in PAGE_CATEGORY_KEYWORDS.items():
+        path_lower = path.lower()
+        for category, aliases in PAGE_ALIASES.items():
             if category not in discovered:
-                if any(kw in combined for kw in keywords):
+                text_match = any(kw in text       for kw in aliases["link_text"])
+                path_match = any(kw in path_lower for kw in aliases["slug_keywords"])
+                if text_match or path_match:
                     discovered[category] = path
-
     return discovered
 
 
@@ -619,6 +789,7 @@ async def check_shipping_policy(client, base_url, api_key=None) -> dict:
 
     return {
         "status": status, "url": url, "explanation": explanation,
+        "detected_language": lang,
         "critical_found": [f for f, v in critical_found.items() if v],
         "critical_missing": [FIELD_LABELS[f] for f in critical_missing],
         "recommended_found": [f for f, v in recommended_found.items() if v],
@@ -639,20 +810,39 @@ async def check_duplicate_shipping_policy(client, base_url, api_key=None) -> dic
     if len(pages) < 2:
         return {"status": "PASS", "explanation": "One shipping policy page found.", "duplicates": []}
 
-    urls = list(pages.keys())
+    # Deduplicate by content: same page served at multiple paths is NOT a GMC issue.
+    # Only flag when genuinely distinct pages with conflicting shipping info exist.
+    unique_pages: dict[str, str] = {}
+    for url, text in pages.items():
+        is_same = any(
+            content_similarity(text, existing_text) > 0.90
+            for existing_text in unique_pages.values()
+        )
+        if not is_same:
+            unique_pages[url] = text
+
+    if len(unique_pages) < 2:
+        return {"status": "PASS",
+                "explanation": "One shipping policy page found (multiple URL aliases resolve to the same content).",
+                "duplicates": []}
+
+    # Now check similarity among the genuinely distinct pages
+    urls = list(unique_pages.keys())
     duplicates = []
     for i in range(len(urls)):
         for j in range(i + 1, len(urls)):
-            sim = content_similarity(pages[urls[i]], pages[urls[j]])
+            sim = content_similarity(unique_pages[urls[i]], unique_pages[urls[j]])
             if sim > 0.75:
                 duplicates.append({"url_1": urls[i], "url_2": urls[j], "similarity": round(sim * 100)})
 
     if duplicates:
         return {"status": "FAIL",
-                "explanation": f"{len(duplicates)} duplicate shipping policy page(s) found. GMC expects one definitive page.",
+                "explanation": f"{len(duplicates)} conflicting shipping policy page(s) found. GMC expects one definitive page.",
                 "duplicates": duplicates}
 
-    return {"status": "PASS", "explanation": "Multiple shipping pages with unique content found.", "duplicates": []}
+    return {"status": "WARNING",
+            "explanation": "Multiple distinct shipping pages found — consolidate to one canonical URL.",
+            "duplicates": [u for u in urls]}
 
 
 async def check_refund_policy(client, base_url, api_key=None) -> dict:
@@ -690,6 +880,7 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
 
     return {
         "status": status, "url": url, "explanation": explanation,
+        "detected_language": lang,
         "critical_found": [f for f, v in critical_found.items() if v],
         "critical_missing": [FIELD_LABELS[f] for f in critical_missing],
         "recommended_found": [f for f, v in recommended_found.items() if v],
@@ -697,44 +888,9 @@ async def check_refund_policy(client, base_url, api_key=None) -> dict:
     }
 
 
-PRIVACY_PATHS = ["/policies/privacy-policy", "/pages/privacy-policy", "/privacy-policy", "/privacy", "/pages/privacy"]
-PRIVACY_CRITICAL = ["collect", "personal", "data", "information"]
-PRIVACY_RECOMMENDED = ["cookie", "third party", "gdpr", "contact"]
-
-TOS_PATHS = [
-    "/policies/terms-of-service", "/pages/terms-of-service", "/terms-of-service",
-    "/terms", "/pages/terms", "/policies/terms",
-    "/pages/terms-and-conditions", "/pages/terms-conditions", "/pages/termsandconditions",
-    "/pages/terms-of-use", "/pages/conditions-of-use", "/pages/general-conditions",
-    # language variants
-    "/pages/agb", "/pages/nutzungsbedingungen", "/pages/algemene-voorwaarden",
-    "/pages/conditions-generales", "/pages/condiciones",
-]
 # A page qualifies as ToS if it contains at least 2 of these keywords.
 # This handles "Terms and Conditions", "Terms of Use", "General Conditions", etc.
 TOS_KEYWORD_POOL = ["terms", "conditions", "agreement", "service", "use", "policy"]
-
-ABOUT_PATHS = [
-    "/pages/about-us", "/pages/about", "/about-us", "/about",
-    "/pages/our-story", "/pages/story", "/pages/brand-story",
-    "/pages/brand", "/pages/our-brand", "/pages/company", "/pages/team",
-    "/pages/mission", "/pages/our-mission",
-    "/pages/who-we-are", "/pages/who-we",
-    "/pages/meet-us", "/pages/the-brand", "/pages/the-story",
-    # German
-    "/pages/uber-uns", "/pages/ueber-uns", "/pages/unsere-geschichte",
-    "/pages/geschichte", "/pages/wer-wir-sind", "/pages/unser-unternehmen",
-    # French
-    "/pages/a-propos", "/pages/notre-histoire", "/pages/qui-sommes-nous",
-    # Dutch
-    "/pages/over-ons", "/pages/ons-verhaal", "/pages/wie-zijn-wij",
-    # Spanish
-    "/pages/quienes-somos", "/pages/nuestra-historia",
-    # Italian
-    "/pages/chi-siamo",
-]
-CONTACT_CHECK_PATHS = ["/pages/contact", "/pages/contact-us", "/contact", "/contact-us", "/pages/support"]
-FAQ_PATHS = ["/pages/faq", "/pages/faqs", "/faq", "/pages/frequently-asked-questions", "/pages/help"]
 
 
 async def check_privacy_policy(client, base_url, api_key=None) -> dict:
@@ -742,9 +898,12 @@ async def check_privacy_policy(client, base_url, api_key=None) -> dict:
     if not html:
         return {"status": "FAIL", "url": None,
                 "explanation": "Privacy Policy page not found. GMC requires a privacy policy disclosing data collection."}
+    lang = detect_language(html)
     text = BeautifulSoup(html, "html.parser").get_text(separator=" ").lower()
-    missing_critical = [f for f in PRIVACY_CRITICAL if f not in text]
-    missing_rec = [f for f in PRIVACY_RECOMMENDED if f not in text]
+    critical_kws = PRIVACY_CRITICAL_BY_LANG.get(lang, PRIVACY_CRITICAL_BY_LANG["en"])
+    rec_kws      = PRIVACY_RECOMMENDED_BY_LANG.get(lang, PRIVACY_RECOMMENDED_BY_LANG["en"])
+    missing_critical = [kw for kw in critical_kws if kw not in text]
+    missing_rec      = [kw for kw in rec_kws      if kw not in text]
     if missing_critical:
         return {"status": "WARNING", "url": url,
                 "explanation": f"Privacy Policy found but missing key content: {', '.join(missing_critical)}."}
