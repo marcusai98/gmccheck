@@ -869,11 +869,18 @@ function showResults(report, url) {
         const renderItem = (item) => {
           const url = item.url || null;
           const displayText = item.text || item.email || item.wrong_domain || url || JSON.stringify(item);
+          // Main label: link to item.url if available, otherwise plain text
           const label = url
             ? `<a href="${url}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:0.85;">${displayText}</a>`
-            : displayText;
+            : (item.email
+              ? `<a href="mailto:${item.email}" style="color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:0.85;">${displayText}</a>`
+              : displayText);
           const code = item.status_code ? `<span class="check-item-code">${item.status_code}</span>` : '';
-          return `<div class="check-item ${cls}">${code}<span>${label}</span></div>`;
+          // found_on: show a clickable link to the page where this item was found
+          const foundOn = item.found_on
+            ? ` <a href="${item.found_on}" target="_blank" rel="noopener" title="Found on: ${item.found_on}" style="font-size:0.72rem;opacity:0.45;margin-left:6px;color:inherit;text-decoration:underline;text-underline-offset:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;display:inline-block;vertical-align:middle;">↗ ${new URL(item.found_on).pathname || '/'}</a>`
+            : '';
+          return `<div class="check-item ${cls}">${code}<span>${label}${foundOn}</span></div>`;
         };
         for (const item of shown) itemsHtml += renderItem(item);
         if (hidden.length > 0) {
